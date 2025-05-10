@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Nota Laundry</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+        .status-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .status-header h2 {
+            color: #0d6efd;
+        }
+        .status-badge {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+        }
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dotted #ddd;
+        }
+        .total-section {
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="status-container">
+        <div class="status-header">
+            <h2>HANIFA LAUNDRY</h2>
+            <p>Kalibagor, Banyumas</p>
+            <p>Telp: 085641344448</p>
+        </div>
+        
+        <div id="loading-spinner" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Memuat status nota...</p>
+        </div>
+        
+        <div id="status-content" style="display: none;">
+            <h4 class="text-center mb-4">Status Nota Laundry</h4>
+            
+            <div class="mb-4">
+                <p><strong>No. Nota:</strong> <span id="nota-number"></span></p>
+                <p><strong>Tanggal:</strong> <span id="nota-date"></span></p>
+                <p><strong>Pelanggan:</strong> <span id="nota-customer"></span></p>
+                <p><strong>Telp:</strong> <span id="nota-phone"></span></p>
+            </div>
+            
+            <div class="text-center mb-4">
+                <span id="status-badge" class="badge status-badge bg-warning">BELUM LUNAS</span>
+            </div>
+            
+            <h5>Detail Layanan:</h5>
+            <div id="nota-services" class="mb-3"></div>
+            
+            <div class="total-section">
+                <div class="d-flex justify-content-between">
+                    <span>Ongkos Kirim:</span>
+                    <span id="nota-delivery">Rp 0</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Total:</span>
+                    <span id="nota-total">Rp 0</span>
+                </div>
+            </div>
+            
+            <div class="mt-4" id="nota-notes"></div>
+            
+            <div class="mt-4 text-center text-muted">
+                <small>Terima kasih telah menggunakan layanan Hanifa Laundry</small>
+            </div>
+        </div>
+        
+        <div id="error-message" class="alert alert-danger mt-3" style="display: none;"></div>
+    </div>
+
+    <!-- Firebase and App Script -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAi9G44WIIluagcBWq6D5AdphSRiRF5B9E",
+            authDomain: "laundryapp-87cb5.firebaseapp.com",
+            projectId: "laundryapp-87cb5",
+            storageBucket: "laundryapp-87cb5.appspot.com",
+            messagingSenderId: "260622327214",
+            appId: "1:260622327214:web:ac14068843eb6756a9fc3f",
+            measurementId: "G-BRHJD4NY1N"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Get transaction ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const transactionId = urlParams.get('id');
+
+        // Load transaction data
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!transactionId) {
+                showError('ID nota tidak ditemukan di URL');
+                return;
+            }
+            
+            loadTransaction(transactionId);
+        });
+
+        function loadTransaction(transactionId) {
+            db.collection('transactions').doc(transactionId).get()
+                .then(async (doc) => {
+                    if (doc.exists) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        // Hide loading, show content
+                        document.getElementById('loading-spinner').style.display = 'none';
+                        document.getElementById('status-content').style.display = 'block';
+                        
+                        // Fill transaction data
+                        document.getElementById('nota-number').textContent = transaction.invoiceNumber || '-';
+                        document.getElementById('nota-date').textContent = 
+                            transaction.createdAt.toDate().toLocaleString('id-ID');
+                        document.getElementById('nota-customer').textContent = customer.name || '-';
+                        document.getElementById('nota-phone').textContent = customer.phone || '-';
+                        
+                        // Set status badge
+                        const statusBadge = document.getElementById('status-badge');
+                        if (transaction.paymentStatus === 'lunas') {
+                            statusBadge.textContent = 'LUNAS';
+                            statusBadge.className = 'badge status-badge bg-success';
+                        } else {
+                            statusBadge.textContent = 'BELUM LUNAS';
+                            statusBadge.className = 'badge status-badge bg-warning';
+                        }
+                        
+                        // Fill services
+                        const servicesContainer = document.getElementById('nota-services');
+                        servicesContainer.innerHTML = '';
+                        
+                        let total = 0;
+                        for (const serviceItem of transaction.services) {
+                            const serviceDoc = await db.collection('services').doc(serviceItem.serviceId).get();
+                            const service = serviceDoc.data();
+                            
+                            const serviceElement = document.createElement('div');
+                            serviceElement.className = 'service-item';
+                            serviceElement.innerHTML = `
+                                <span>${service.name} x${serviceItem.quantity}</span>
+                                <span>Rp ${serviceItem.subtotal.toLocaleString('id-ID')}</span>
+                            `;
+                            servicesContainer.appendChild(serviceElement);
+                            
+                            total += serviceItem.subtotal;
+                        }
+                        
+                        total += transaction.deliveryFee || 0;
+                        
+                        // Fill totals
+                        document.getElementById('nota-delivery').textContent = 
+                            `Rp ${(transaction.deliveryFee || 0).toLocaleString('id-ID')}`;
+                        document.getElementById('nota-total').textContent = 
+                            `Rp ${total.toLocaleString('id-ID')}`;
+                        
+                        // Fill notes if exists
+                        const notesContainer = document.getElementById('nota-notes');
+                        if (transaction.notes) {
+                            notesContainer.innerHTML = `
+                                <div class="alert alert-info">
+                                    <strong>Catatan:</strong> ${transaction.notes}
+                                </div>
+                            `;
+                        } else {
+                            notesContainer.innerHTML = '';
+                        }
+                    } else {
+                        showError('Nota tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error loading transaction: ", error);
+                    showError('Gagal memuat data nota: ' + error.message);
+                });
+        }
+
+        function showError(message) {
+            document.getElementById('loading-spinner').style.display = 'none';
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-message').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
