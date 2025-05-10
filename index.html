@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hanifa Laundry - Kalibagor Banyumas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #0d6efd;
+        }
+        .header-logo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header-logo h2 {
+            color: #0d6efd;
+            font-weight: 700;
+        }
+        .receipt {
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 25px;
+            max-width: 500px;
+            margin: 0 auto;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 5px;
+        }
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px dashed #333;
+            padding-bottom: 15px;
+        }
+        .receipt-header h4 {
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #0d6efd;
+        }
+        .receipt-body {
+            margin-bottom: 15px;
+        }
+        .receipt-footer {
+            text-align: center;
+            font-style: italic;
+            margin-top: 20px;
+            border-top: 2px dashed #333;
+            padding-top: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px dotted #ddd;
+        }
+        .total-section {
+            border-top: 2px solid #333;
+            padding-top: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .customer-info-card {
+            background-color: #e9f5ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .print-only {
+            display: none;
+        }
+        
+        /* Print styles for thermal printer */
+        @media print {
+            body * {
+                visibility: hidden;
+                margin: 0;
+                padding: 0;
+            }
+            #print-section, #print-section * {
+                visibility: visible;
+            }
+            #print-section {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 58mm;
+                padding: 2mm;
+                font-size: 10px;
+                font-family: Arial, sans-serif;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            @page {
+                size: 58mm auto;
+                margin: 0;
+            }
+        }
+        
+        /* Improved receipt styling */
+        .receipt-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .receipt-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .receipt-info {
+            margin-bottom: 15px;
+        }
+        .receipt-info p {
+            margin-bottom: 5px;
+        }
+        .receipt-divider {
+            border-top: 1px dashed #333;
+            margin: 15px 0;
+        }
+        .receipt-service-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .receipt-total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .receipt-grand-total {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light no-print">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-cloud-sun"></i> Hanifa Laundry
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" id="transaction-tab-link">
+                            <i class="bi bi-receipt"></i> Transaksi Baru
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="customer-tab-link">
+                            <i class="bi bi-people"></i> Pelanggan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="service-tab-link">
+                            <i class="bi bi-list-check"></i> Layanan
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="history-tab-link">
+                            <i class="bi bi-clock-history"></i> Riwayat
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" id="report-tab-link">
+                            <i class="bi bi-graph-up"></i> Laporan
+                        </a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <span class="navbar-text">
+                        Kalibagor, Banyumas
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Tab Transaksi -->
+        <div id="transaction-tab-content" class="tab-content">
+            <div class="header-logo print-only">
+                <h2>HANIFA LAUNDRY</h2>
+                <p>Kalibagor, Banyumas | Telp: 085641344448</p>
+                <hr>
+            </div>
+            
+            <div class="row no-print">
+                <div class="col-md-8">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0"><i class="bi bi-cart-plus"></i> Transaksi Baru</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="customer-info-card" id="customer-info-display" style="display: none;">
+                                <h6><i class="bi bi-person"></i> Data Pelanggan</h6>
+                                <p id="customer-name-display"></p>
+                                <p id="customer-phone-display"></p>
+                                <p id="customer-address-display"></p>
+                                <button class="btn btn-sm btn-outline-primary" id="change-customer-btn">Ganti Pelanggan</button>
+                            </div>
+                            
+                            <div id="customer-select-section">
+                                <div class="mb-3">
+                                    <label class="form-label">Cari Pelanggan</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="customer-search" placeholder="Nama atau No HP">
+                                        <button class="btn btn-outline-secondary" type="button" id="search-customer-btn">
+                                            <i class="bi bi-search"></i> Cari
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="customer-search-results" style="display: none;">
+                                    <div class="list-group" id="customer-results-list"></div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <button class="btn btn-sm btn-outline-success" id="add-new-customer-btn">
+                                        <i class="bi bi-plus-circle"></i> Tambah Pelanggan Baru
+                                    </button>
+                                </div>
+                                
+                                <div id="new-customer-form" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nama Pelanggan</label>
+                                        <input type="text" class="form-control" id="new-customer-name" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">No HP (WhatsApp)</label>
+                                        <input type="tel" class="form-control" id="new-customer-phone" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Alamat</label>
+                                        <textarea class="form-control" id="new-customer-address" rows="2"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Catatan Khusus</label>
+                                        <textarea class="form-control" id="new-customer-notes" rows="2"></textarea>
+                                    </div>
+                                    <button class="btn btn-primary" id="save-new-customer-btn">Simpan Pelanggan</button>
+                                    <button class="btn btn-outline-secondary" id="cancel-new-customer-btn">Batal</button>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Pilih Layanan</label>
+                                <div class="input-group mb-3">
+                                    <select class="form-select" id="service-type-select">
+                                        <option value="">Semua Jenis</option>
+                                        <option value="express">Express</option>
+                                        <option value="regular">Regular</option>
+                                    </select>
+                                    <select class="form-select" id="service-category-select">
+                                        <option value="">Semua Kategori</option>
+                                        <option value="kiloan">Kiloan</option>
+                                        <option value="satuan">Satuan</option>
+                                    </select>
+                                </div>
+                                <select class="form-select" id="service-select">
+                                    <option value="">Pilih Layanan...</option>
+                                </select>
+                            </div>
+                            
+                            <div class="row g-3" id="service-details" style="display: none;">
+                                <div class="col-md-4">
+                                    <label class="form-label">Harga</label>
+                                    <input type="text" class="form-control" id="service-price" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Jumlah</label>
+                                    <input type="number" class="form-control" id="service-quantity" min="1" value="1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Subtotal</label>
+                                    <input type="text" class="form-control" id="service-subtotal" readonly>
+                                </div>
+                                <div class="col-12">
+                                    <button class="btn btn-primary" id="add-service-btn">
+                                        <i class="bi bi-plus-circle"></i> Tambahkan
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <hr>
+                            
+                            <h6><i class="bi bi-list-check"></i> Daftar Layanan Dipilih</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="selected-services-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Layanan</th>
+                                            <th>Jumlah</th>
+                                            <th>Harga</th>
+                                            <th>Subtotal</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selected-services-body">
+                                        <!-- Items will be added here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Ongkos Kirim</label>
+                                        <input type="number" class="form-control" id="delivery-fee" min="0" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Catatan</label>
+                                        <textarea class="form-control" id="transaction-notes" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="card-title mb-0"><i class="bi bi-receipt"></i> Nota Laundry</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="receipt" id="receipt-preview">
+                                <div class="receipt-header">
+                                    <h4>HANIFA LAUNDRY</h4>
+                                    <p>Kalibagor, Banyumas</p>
+                                    <p>Telp: 085641344448</p>
+                                </div>
+                                <hr>
+                                <div class="receipt-body">
+                                    <p><strong>No. Nota:</strong> <span id="receipt-number">-</span></p>
+                                    <p><strong>Tanggal:</strong> <span id="receipt-date">-</span></p>
+                                    <p><strong>Pelanggan:</strong> <span id="receipt-customer">-</span></p>
+                                    <p><strong>Telp:</strong> <span id="receipt-phone">-</span></p>
+                                    <hr>
+                                    <h6>Detail Layanan:</h6>
+                                    <div id="receipt-services">
+                                        <!-- Services will be added here -->
+                                    </div>
+                                    <div class="total-section">
+                                        <div class="d-flex justify-content-between">
+                                            <span>Ongkos Kirim:</span>
+                                            <span id="receipt-delivery">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span>Total:</span>
+                                            <span id="receipt-total">Rp 0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="receipt-footer">
+                                    <p>Terima kasih atas kunjungan Anda</p>
+                                    <p>Barang yang sudah dicuci tidak dapat ditukar/dikembalikan</p>
+                                </div>
+                            </div>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-primary" id="save-transaction-btn">
+                                    <i class="bi bi-save"></i> Simpan Transaksi
+                                </button>
+                                <button class="btn btn-success" id="print-receipt-btn" disabled>
+                                    <i class="bi bi-printer"></i> Cetak Nota
+                                </button>
+                                <button class="btn btn-warning" id="send-whatsapp-btn" disabled>
+                                    <i class="bi bi-whatsapp"></i> Kirim via WhatsApp
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Pelanggan -->
+        <div id="customer-tab-content" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="bi bi-people"></i> Manajemen Pelanggan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="customer-management-search" placeholder="Cari pelanggan...">
+                                <button class="btn btn-outline-secondary" type="button" id="customer-management-search-btn">
+                                    <i class="bi bi-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-success" id="add-customer-btn">
+                                <i class="bi bi-plus-circle"></i> Tambah Pelanggan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nama</th>
+                                    <th>No HP</th>
+                                    <th>Alamat</th>
+                                    <th>Catatan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="customer-management-table">
+                                <tr>
+                                    <td colspan="5" class="text-center">Memuat data pelanggan...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Layanan -->
+        <div id="service-tab-content" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="bi bi-list-check"></i> Manajemen Layanan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="service-management-search" placeholder="Cari layanan...">
+                                <button class="btn btn-outline-secondary" type="button" id="service-management-search-btn">
+                                    <i class="bi bi-search"></i> Cari
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-success" id="add-service-management-btn">
+                                <i class="bi bi-plus-circle"></i> Tambah Layanan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nama Layanan</th>
+                                    <th>Jenis</th>
+                                    <th>Kategori</th>
+                                    <th>Durasi (hari)</th>
+                                    <th>Harga</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="service-management-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">Memuat data layanan...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Riwayat -->
+        <div id="history-tab-content" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="bi bi-clock-history"></i> Riwayat Transaksi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Tanggal Mulai</label>
+                            <input type="date" class="form-control" id="history-start-date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tanggal Akhir</label>
+                            <input type="date" class="form-control" id="history-end-date">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cari (No Nota/Nama)</label>
+                            <input type="text" class="form-control" id="history-search-term" placeholder="No Nota atau Nama Pelanggan">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-primary" id="history-search-btn">
+                                <i class="bi bi-search"></i> Filter
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>No. Nota</th>
+                                    <th>Tanggal</th>
+                                    <th>Pelanggan</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table">
+                                <tr>
+                                    <td colspan="6" class="text-center">Memuat riwayat transaksi...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab Laporan -->
+        <div id="report-tab-content" class="tab-content" style="display: none;">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0"><i class="bi bi-graph-up"></i> Laporan</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs" id="reportTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="daily-report-tab" data-bs-toggle="tab" data-bs-target="#daily-report">Harian</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="monthly-report-tab" data-bs-toggle="tab" data-bs-target="#monthly-report">Bulanan</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="yearly-report-tab" data-bs-toggle="tab" data-bs-target="#yearly-report">Tahunan</button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom">
+                        <div class="tab-pane fade show active" id="daily-report" role="tabpanel">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Pilih Tanggal</label>
+                                    <input type="date" class="form-control" id="daily-report-date" value="">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-primary" id="generate-daily-report-btn">
+                                        <i class="bi bi-arrow-repeat"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="report-result" id="daily-report-result">
+                                <!-- Daily report will be shown here -->
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="monthly-report" role="tabpanel">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Pilih Bulan</label>
+                                    <select class="form-select" id="monthly-report-month">
+                                        <option value="1">Januari</option>
+                                        <option value="2">Februari</option>
+                                        <option value="3">Maret</option>
+                                        <option value="4">April</option>
+                                        <option value="5">Mei</option>
+                                        <option value="6">Juni</option>
+                                        <option value="7">Juli</option>
+                                        <option value="8">Agustus</option>
+                                        <option value="9">September</option>
+                                        <option value="10">Oktober</option>
+                                        <option value="11">November</option>
+                                        <option value="12">Desember</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Pilih Tahun</label>
+                                    <select class="form-select" id="monthly-report-year">
+                                        <!-- Years will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-primary" id="generate-monthly-report-btn">
+                                        <i class="bi bi-arrow-repeat"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="report-result" id="monthly-report-result">
+                                <!-- Monthly report will be shown here -->
+                            </div>
+                        </div>
+                        
+                        <div class="tab-pane fade" id="yearly-report" role="tabpanel">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Pilih Tahun</label>
+                                    <select class="form-select" id="yearly-report-year">
+                                        <!-- Years will be populated by JavaScript -->
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-primary" id="generate-yearly-report-btn">
+                                        <i class="bi bi-arrow-repeat"></i> Generate
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="report-result" id="yearly-report-result">
+                                <!-- Yearly report will be shown here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Edit Pelanggan -->
+    <div class="modal fade" id="editCustomerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Pelanggan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-customer-id">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Pelanggan</label>
+                        <input type="text" class="form-control" id="edit-customer-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">No HP (WhatsApp)</label>
+                        <input type="tel" class="form-control" id="edit-customer-phone" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Alamat</label>
+                        <textarea class="form-control" id="edit-customer-address" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Catatan Khusus</label>
+                        <textarea class="form-control" id="edit-customer-notes" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-customer-btn">Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Edit Layanan -->
+    <div class="modal fade" id="editServiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Layanan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-service-id">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Layanan</label>
+                        <input type="text" class="form-control" id="edit-service-name" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Jenis Layanan</label>
+                            <select class="form-select" id="edit-service-type" required>
+                                <option value="express">Express</option>
+                                <option value="regular">Regular</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori</label>
+                            <select class="form-select" id="edit-service-category" required>
+                                <option value="kiloan">Kiloan</option>
+                                <option value="satuan">Satuan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Durasi (hari)</label>
+                            <input type="number" class="form-control" id="edit-service-duration" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Harga</label>
+                            <input type="number" class="form-control" id="edit-service-price" min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="save-edit-service-btn">Simpan Perubahan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk Tambah Layanan -->
+    <div class="modal fade" id="addServiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah Layanan Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Layanan</label>
+                        <input type="text" class="form-control" id="new-service-name" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Jenis Layanan</label>
+                            <select class="form-select" id="new-service-type" required>
+                                <option value="express">Express</option>
+                                <option value="regular">Regular</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori</label>
+                            <select class="form-select" id="new-service-category" required>
+                                <option value="kiloan">Kiloan</option>
+                                <option value="satuan">Satuan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Durasi (hari)</label>
+                            <input type="number" class="form-control" id="new-service-duration" min="1" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Harga</label>
+                            <input type="number" class="form-control" id="new-service-price" min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" id="save-new-service-btn">Simpan Layanan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal untuk View Transaction -->
+    <div class="modal fade" id="viewTransactionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Detail Transaksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="receipt">
+                        <div class="receipt-header">
+                            <h4>HANIFA LAUNDRY</h4>
+                            <p>Kalibagor, Banyumas</p>
+                            <p>Telp: 085641344448</p>
+                        </div>
+                        <hr>
+                        <div class="receipt-body" id="transaction-detail-content">
+                            <!-- Transaction details will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary" id="print-history-receipt-btn">
+                        <i class="bi bi-printer"></i> Cetak Ulang
+                    </button>
+                    <button type="button" class="btn btn-success" id="send-whatsapp-history-btn">
+                        <i class="bi bi-whatsapp"></i> Kirim WhatsApp
+                    </button>
+                    <button type="button" class="btn btn-warning" id="mark-as-paid-btn">
+                        <i class="bi bi-check-circle"></i> Tandai Lunas
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden print section -->
+    <div id="print-section" style="display: none;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-storage-compat.js"></script>
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAi9G44WIIluagcBWq6D5AdphSRiRF5B9E",
+            authDomain: "laundryapp-87cb5.firebaseapp.com",
+            projectId: "laundryapp-87cb5",
+            storageBucket: "laundryapp-87cb5.appspot.com",
+            messagingSenderId: "260622327214",
+            appId: "1:260622327214:web:ac14068843eb6756a9fc3f",
+            measurementId: "G-BRHJD4NY1N"
+        };
+
+        // Initialize Firebase
+        let db;
+        try {
+            // Initialize Firebase
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            
+            // Enable offline persistence
+            db.enablePersistence()
+                .catch((err) => {
+                    console.error("Firebase offline persistence error: ", err);
+                });
+            
+            console.log("Firebase initialized successfully");
+        } catch (error) {
+            console.error("Firebase initialization error: ", error);
+            alert("Gagal menginisialisasi Firebase. Silakan refresh halaman.");
+        }
+
+        // Global variables
+        let currentCustomer = null;
+        let selectedServices = [];
+        let currentTransactionId = null;
+        let currentInvoiceNumber = null;
+
+        // DOM elements
+        const tabLinks = {
+            transaction: document.getElementById('transaction-tab-link'),
+            customer: document.getElementById('customer-tab-link'),
+            service: document.getElementById('service-tab-link'),
+            history: document.getElementById('history-tab-link'),
+            report: document.getElementById('report-tab-link')
+        };
+
+        const tabContents = {
+            transaction: document.getElementById('transaction-tab-content'),
+            customer: document.getElementById('customer-tab-content'),
+            service: document.getElementById('service-tab-content'),
+            history: document.getElementById('history-tab-content'),
+            report: document.getElementById('report-tab-content')
+        };
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up tab navigation
+            for (const [tabName, link] of Object.entries(tabLinks)) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showTab(tabName);
+                });
+            }
+
+            // Initialize date fields
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('daily-report-date').value = today;
+            document.getElementById('history-start-date').value = today;
+            document.getElementById('history-end-date').value = today;
+
+            // Populate year selects
+            const currentYear = new Date().getFullYear();
+            const yearSelects = [
+                document.getElementById('monthly-report-year'),
+                document.getElementById('yearly-report-year')
+            ];
+            
+            yearSelects.forEach(select => {
+                for (let year = currentYear - 2; year <= currentYear + 2; year++) {
+                    const option = document.createElement('option');
+                    option.value = year;
+                    option.textContent = year;
+                    if (year === currentYear) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+
+            // Set current month
+            const currentMonth = new Date().getMonth() + 1;
+            document.getElementById('monthly-report-month').value = currentMonth;
+
+            // Load initial data
+            loadServices();
+            loadCustomers();
+            loadTransactionHistory();
+            
+            // Show transaction tab by default
+            showTab('transaction');
+
+            // Initialize event listeners for customer management
+            initCustomerEventListeners();
+            
+            // Initialize event listeners for service management
+            initServiceEventListeners();
+            
+            // Initialize event listeners for transaction
+            initTransactionEventListeners();
+        });
+
+        // Initialize customer event listeners
+        function initCustomerEventListeners() {
+            // Save new customer
+            document.getElementById('save-new-customer-btn').addEventListener('click', function() {
+                const customerData = {
+                    name: document.getElementById('new-customer-name').value.trim(),
+                    phone: document.getElementById('new-customer-phone').value.trim(),
+                    address: document.getElementById('new-customer-address').value.trim(),
+                    notes: document.getElementById('new-customer-notes').value.trim(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Validate input
+                if (!customerData.name || !customerData.phone) {
+                    alert('Nama dan No HP pelanggan harus diisi');
+                    return;
+                }
+
+                // Format phone number
+                if (!customerData.phone.startsWith('0')) {
+                    customerData.phone = '0' + customerData.phone;
+                }
+
+                // Add to Firestore
+                db.collection('customers').add(customerData)
+                    .then((docRef) => {
+                        alert('Pelanggan berhasil ditambahkan!');
+                        
+                        // Reset form
+                        document.getElementById('new-customer-form').style.display = 'none';
+                        document.getElementById('new-customer-name').value = '';
+                        document.getElementById('new-customer-phone').value = '';
+                        document.getElementById('new-customer-address').value = '';
+                        document.getElementById('new-customer-notes').value = '';
+                        
+                        // Select the new customer
+                        selectCustomer(docRef.id, customerData);
+                        
+                        // Refresh customer list
+                        loadCustomers();
+                    })
+                    .catch((error) => {
+                        console.error("Error adding customer: ", error);
+                        alert('Gagal menambahkan pelanggan: ' + error.message);
+                    });
+            });
+
+            // Cancel new customer
+            document.getElementById('cancel-new-customer-btn').addEventListener('click', function() {
+                document.getElementById('new-customer-form').style.display = 'none';
+            });
+
+            // Add new customer button
+            document.getElementById('add-new-customer-btn').addEventListener('click', function() {
+                document.getElementById('new-customer-form').style.display = 'block';
+            });
+
+            // Search customer
+            document.getElementById('search-customer-btn').addEventListener('click', function() {
+                const searchTerm = document.getElementById('customer-search').value.trim();
+                
+                if (!searchTerm) {
+                    alert('Masukkan nama atau nomor HP pelanggan');
+                    return;
+                }
+                
+                db.collection('customers')
+                    .where('name', '>=', searchTerm)
+                    .where('name', '<=', searchTerm + '\uf8ff')
+                    .get()
+                    .then((querySnapshot) => {
+                        const resultsList = document.getElementById('customer-results-list');
+                        resultsList.innerHTML = '';
+                        
+                        if (querySnapshot.empty) {
+                            resultsList.innerHTML = '<div class="list-group-item">Tidak ditemukan pelanggan</div>';
+                        } else {
+                            querySnapshot.forEach((doc) => {
+                                const customer = doc.data();
+                                const item = document.createElement('button');
+                                item.className = 'list-group-item list-group-item-action';
+                                item.innerHTML = `
+                                    <h6>${customer.name}</h6>
+                                    <p class="mb-1">${customer.phone}</p>
+                                    <small>${customer.address || '-'}</small>
+                                `;
+                                item.addEventListener('click', function() {
+                                    selectCustomer(doc.id, customer);
+                                });
+                                resultsList.appendChild(item);
+                            });
+                        }
+                        
+                        document.getElementById('customer-search-results').style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error("Error searching customers: ", error);
+                        alert('Gagal mencari pelanggan: ' + error.message);
+                    });
+            });
+
+            // Change customer button
+            document.getElementById('change-customer-btn').addEventListener('click', function() {
+                currentCustomer = null;
+                document.getElementById('customer-info-display').style.display = 'none';
+                document.getElementById('customer-select-section').style.display = 'block';
+                document.getElementById('receipt-customer').textContent = '-';
+                document.getElementById('receipt-phone').textContent = '-';
+            });
+
+            // Customer management search
+            document.getElementById('customer-management-search-btn').addEventListener('click', function() {
+                const searchTerm = document.getElementById('customer-management-search').value.trim();
+                loadCustomers(searchTerm);
+            });
+
+            // Add customer from management tab
+            document.getElementById('add-customer-btn').addEventListener('click', function() {
+                showTab('transaction');
+                document.getElementById('add-new-customer-btn').click();
+            });
+        }
+
+        // Initialize service event listeners
+        function initServiceEventListeners() {
+            // Save new service
+            document.getElementById('save-new-service-btn').addEventListener('click', function() {
+                const serviceData = {
+                    name: document.getElementById('new-service-name').value.trim(),
+                    type: document.getElementById('new-service-type').value,
+                    category: document.getElementById('new-service-category').value,
+                    duration: parseInt(document.getElementById('new-service-duration').value) || 0,
+                    price: parseInt(document.getElementById('new-service-price').value) || 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                // Validate input
+                if (!serviceData.name) {
+                    alert('Nama layanan harus diisi');
+                    return;
+                }
+                
+                if (serviceData.duration <= 0) {
+                    alert('Durasi harus lebih dari 0 hari');
+                    return;
+                }
+                
+                if (serviceData.price <= 0) {
+                    alert('Harga harus lebih dari 0');
+                    return;
+                }
+
+                // Add to Firestore
+                db.collection('services').add(serviceData)
+                    .then((docRef) => {
+                        alert('Layanan berhasil ditambahkan!');
+                        
+                        // Close modal
+                        bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
+                        
+                        // Reset form
+                        document.getElementById('new-service-name').value = '';
+                        document.getElementById('new-service-duration').value = '';
+                        document.getElementById('new-service-price').value = '';
+                        
+                        // Refresh service list
+                        loadServices();
+                    })
+                    .catch((error) => {
+                        console.error("Error adding service: ", error);
+                        alert('Gagal menambahkan layanan: ' + error.message);
+                    });
+            });
+
+            // Service management search
+            document.getElementById('service-management-search-btn').addEventListener('click', function() {
+                const searchTerm = document.getElementById('service-management-search').value.trim();
+                loadServices(searchTerm);
+            });
+
+            // Add service from management tab
+            document.getElementById('add-service-management-btn').addEventListener('click', function() {
+                const modal = new bootstrap.Modal(document.getElementById('addServiceModal'));
+                modal.show();
+            });
+
+            // Filter services
+            document.getElementById('service-type-select').addEventListener('change', filterServices);
+            document.getElementById('service-category-select').addEventListener('change', filterServices);
+
+            // Add service to transaction
+            document.getElementById('add-service-btn').addEventListener('click', function() {
+                const serviceSelect = document.getElementById('service-select');
+                const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+                
+                if (!selectedOption.value) {
+                    alert('Pilih layanan terlebih dahulu');
+                    return;
+                }
+                
+                const serviceId = selectedOption.value;
+                const serviceName = selectedOption.text.split(' (')[0];
+                const quantity = parseInt(document.getElementById('service-quantity').value) || 0;
+                const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+                const subtotal = price * quantity;
+                
+                if (quantity <= 0) {
+                    alert('Jumlah harus lebih dari 0');
+                    return;
+                }
+                
+                // Add to selected services
+                selectedServices.push({
+                    serviceId,
+                    name: serviceName,
+                    quantity,
+                    price,
+                    subtotal
+                });
+                
+                // Update selected services table
+                updateSelectedServicesTable();
+                
+                // Update receipt preview
+                updateReceiptPreview();
+                
+                // Reset service selection
+                serviceSelect.selectedIndex = 0;
+                document.getElementById('service-details').style.display = 'none';
+            });
+
+            // Service quantity change
+            document.getElementById('service-quantity').addEventListener('input', function() {
+                const price = parseFloat(document.getElementById('service-price').value) || 0;
+                const quantity = parseInt(this.value) || 0;
+                document.getElementById('service-subtotal').value = price * quantity;
+            });
+        }
+
+        // Initialize transaction event listeners
+        function initTransactionEventListeners() {
+            // Save transaction
+            document.getElementById('save-transaction-btn').addEventListener('click', function() {
+                if (!currentCustomer) {
+                    alert('Pilih pelanggan terlebih dahulu');
+                    return;
+                }
+                
+                if (selectedServices.length === 0) {
+                    alert('Tambahkan minimal satu layanan');
+                    return;
+                }
+                
+                const deliveryFee = parseFloat(document.getElementById('delivery-fee').value) || 0;
+                const notes = document.getElementById('transaction-notes').value.trim();
+                
+                // Calculate total
+                let total = selectedServices.reduce((sum, service) => sum + service.subtotal, 0);
+                total += deliveryFee;
+                
+                // Generate invoice number
+                const now = new Date();
+                const invoiceNumber = `HL-${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+                
+                // Prepare transaction data
+                const transactionData = {
+                    customerId: currentCustomer.id,
+                    services: selectedServices.map(service => ({
+                        serviceId: service.serviceId,
+                        quantity: service.quantity,
+                        price: service.price,
+                        subtotal: service.subtotal
+                    })),
+                    deliveryFee: deliveryFee,
+                    total: total,
+                    paymentStatus: 'belum',
+                    notes: notes,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    invoiceNumber: invoiceNumber
+                };
+                
+                // Save to Firestore
+                db.collection('transactions').add(transactionData)
+                    .then((docRef) => {
+                        currentTransactionId = docRef.id;
+                        currentInvoiceNumber = invoiceNumber;
+                        
+                        // Update receipt preview with actual invoice number
+                        document.getElementById('receipt-number').textContent = invoiceNumber;
+                        
+                        // Enable print and WhatsApp buttons
+                        document.getElementById('print-receipt-btn').disabled = false;
+                        document.getElementById('send-whatsapp-btn').disabled = false;
+                        
+                        alert('Transaksi berhasil disimpan!');
+                    })
+                    .catch((error) => {
+                        console.error("Error saving transaction: ", error);
+                        alert('Gagal menyimpan transaksi: ' + error.message);
+                    });
+            });
+
+            // Print receipt - updated for thermal printer
+            document.getElementById('print-receipt-btn').addEventListener('click', function() {
+                if (!currentCustomer || !currentInvoiceNumber) {
+                    alert('Transaksi belum disimpan atau tidak ada pelanggan');
+                    return;
+                }
+
+                const deliveryFee = parseFloat(document.getElementById('delivery-fee').value) || 0;
+                const total = selectedServices.reduce((sum, service) => sum + service.subtotal, 0) + deliveryFee;
+                
+                const printContent = `
+                    <div style="text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+                        HANIFA LAUNDRY
+                    </div>
+                    <div style="text-align: center; font-size: 9px; margin-bottom: 5px;">
+                        Kalibagor, Banyumas
+                    </div>
+                    <div style="text-align: center; font-size: 9px; margin-bottom: 5px;">
+                        Telp: 085641344448
+                    </div>
+                    <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                    
+                    <div style="font-size: 9px; margin-bottom: 3px;">
+                        <strong>No. Nota:</strong> ${currentInvoiceNumber}
+                    </div>
+                    <div style="font-size: 9px; margin-bottom: 3px;">
+                        <strong>Tanggal:</strong> ${new Date().toLocaleString('id-ID')}
+                    </div>
+                    <div style="font-size: 9px; margin-bottom: 3px;">
+                        <strong>Pelanggan:</strong> ${currentCustomer.name}
+                    </div>
+                    <div style="font-size: 9px; margin-bottom: 5px;">
+                        <strong>Telp:</strong> ${currentCustomer.phone}
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                    
+                    <div style="font-weight: bold; font-size: 9px; margin-bottom: 5px;">
+                        Detail Layanan:
+                    </div>
+                    
+                    ${selectedServices.map(service => `
+                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px;">
+                            <span>${service.name} x${service.quantity}</span>
+                            <span>Rp ${service.subtotal.toLocaleString('id-ID')}</span>
+                        </div>
+                    `).join('')}
+                    
+                    <div style="border-top: 1px solid #000; margin: 5px 0; padding-top: 5px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px;">
+                            <span>Ongkos Kirim:</span>
+                            <span>Rp ${deliveryFee.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
+                            <span>TOTAL:</span>
+                            <span>Rp ${total.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 1px dashed #000; margin: 5px 0; padding-top: 5px; font-size: 8px; text-align: center; font-style: italic;">
+                        <div>Terima kasih atas kunjungan Anda</div>
+                        <div>Barang yang sudah dicuci tidak dapat ditukar/dikembalikan</div>
+                    </div>
+                `;
+                
+                // Update print section
+                const printSection = document.getElementById('print-section');
+                printSection.innerHTML = printContent;
+                
+                // Print the receipt
+                setTimeout(() => {
+                    window.print();
+                }, 200);
+            });
+
+            // Send WhatsApp
+            document.getElementById('send-whatsapp-btn').addEventListener('click', function() {
+                if (!currentCustomer) {
+                    alert('Tidak ada data pelanggan');
+                    return;
+                }
+                
+                // Prepare message
+                let message = `*HANIFA LAUNDRY*\n`;
+                message += `Kalibagor, Banyumas\n`;
+                message += `Telp: 085641344448\n\n`;
+                message += `*Nota Laundry*\n`;
+                message += `No. Nota: ${currentInvoiceNumber}\n`;
+                message += `Tanggal: ${new Date().toLocaleString('id-ID')}\n`;
+                message += `Pelanggan: ${currentCustomer.name}\n`;
+                message += `Telp: ${currentCustomer.phone}\n\n`;
+                message += `*Detail Layanan:*\n`;
+                
+                let total = 0;
+                selectedServices.forEach(service => {
+                    message += `${service.name} x${service.quantity}: Rp ${service.subtotal.toLocaleString('id-ID')}\n`;
+                    total += service.subtotal;
+                });
+                
+                const deliveryFee = parseFloat(document.getElementById('delivery-fee').value) || 0;
+                total += deliveryFee;
+                
+                message += `\nOngkos Kirim: Rp ${deliveryFee.toLocaleString('id-ID')}\n`;
+                message += `*TOTAL: Rp ${total.toLocaleString('id-ID')}*\n\n`;
+                message += `Status: BELUM LUNAS\n\n`;
+                message += `Terima kasih telah menggunakan layanan Hanifa Laundry.`;
+                
+                // Encode message for WhatsApp URL
+                const encodedMessage = encodeURIComponent(message);
+                const phone = currentCustomer.phone.replace(/^0/, '62');
+                const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+                
+                // Open WhatsApp in new tab
+                window.open(whatsappUrl, '_blank');
+            });
+
+            // Delivery fee change
+            document.getElementById('delivery-fee').addEventListener('input', updateReceiptPreview);
+        }
+
+        // Tab management
+        function showTab(tabName) {
+            // Hide all tabs
+            for (const content of Object.values(tabContents)) {
+                content.style.display = 'none';
+            }
+            
+            // Remove active class from all links
+            for (const link of Object.values(tabLinks)) {
+                link.classList.remove('active');
+            }
+            
+            // Show selected tab
+            tabContents[tabName].style.display = 'block';
+            tabLinks[tabName].classList.add('active');
+            
+            // Load data if needed
+            if (tabName === 'customer') {
+                loadCustomers();
+            } else if (tabName === 'service') {
+                loadServices();
+            } else if (tabName === 'history') {
+                loadTransactionHistory();
+            }
+        }
+
+        // Customer management
+        function loadCustomers(searchTerm = '') {
+            console.log("Loading customers...");
+            
+            let query = db.collection('customers').orderBy('name');
+            
+            if (searchTerm) {
+                query = db.collection('customers')
+                    .orderBy('name')
+                    .startAt(searchTerm)
+                    .endAt(searchTerm + '\uf8ff');
+            }
+            
+            query.get()
+                .then((querySnapshot) => {
+                    const customerTable = document.getElementById('customer-management-table');
+                    
+                    if (querySnapshot.empty) {
+                        customerTable.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="text-center">Tidak ada data pelanggan</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    customerTable.innerHTML = '';
+                    
+                    querySnapshot.forEach((doc) => {
+                        const customer = doc.data();
+                        const row = document.createElement('tr');
+                        
+                        row.innerHTML = `
+                            <td>${customer.name || '-'}</td>
+                            <td>${customer.phone || '-'}</td>
+                            <td>${customer.address || '-'}</td>
+                            <td>${customer.notes || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-customer-btn" data-id="${doc.id}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-customer-btn" data-id="${doc.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        customerTable.appendChild(row);
+                    });
+                    
+                    // Add event listeners to edit buttons
+                    document.querySelectorAll('.edit-customer-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const customerId = this.getAttribute('data-id');
+                            editCustomer(customerId);
+                        });
+                    });
+                    
+                    // Add event listeners to delete buttons
+                    document.querySelectorAll('.delete-customer-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const customerId = this.getAttribute('data-id');
+                            if (confirm('Apakah Anda yakin ingin menghapus pelanggan ini?')) {
+                                deleteCustomer(customerId);
+                            }
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error loading customers: ", error);
+                    document.getElementById('customer-management-table').innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center text-danger">
+                                Gagal memuat data pelanggan: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function editCustomer(customerId) {
+            db.collection('customers').doc(customerId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const customer = doc.data();
+                        
+                        document.getElementById('edit-customer-id').value = customerId;
+                        document.getElementById('edit-customer-name').value = customer.name || '';
+                        document.getElementById('edit-customer-phone').value = customer.phone || '';
+                        document.getElementById('edit-customer-address').value = customer.address || '';
+                        document.getElementById('edit-customer-notes').value = customer.notes || '';
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
+                        modal.show();
+                    } else {
+                        alert('Pelanggan tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error getting customer: ", error);
+                    alert('Gagal memuat data pelanggan: ' + error.message);
+                });
+        }
+
+        function deleteCustomer(customerId) {
+            db.collection('customers').doc(customerId).delete()
+                .then(() => {
+                    alert('Pelanggan berhasil dihapus');
+                    loadCustomers();
+                })
+                .catch((error) => {
+                    console.error("Error deleting customer: ", error);
+                    alert('Gagal menghapus pelanggan: ' + error.message);
+                });
+        }
+
+        function selectCustomer(customerId, customerData) {
+            currentCustomer = {
+                id: customerId,
+                ...customerData
+            };
+            
+            document.getElementById('customer-info-display').style.display = 'block';
+            document.getElementById('customer-name-display').textContent = customerData.name || '-';
+            document.getElementById('customer-phone-display').textContent = customerData.phone || '-';
+            document.getElementById('customer-address-display').textContent = customerData.address || '-';
+            
+            document.getElementById('customer-select-section').style.display = 'none';
+            document.getElementById('customer-search-results').style.display = 'none';
+            
+            // Update receipt preview
+            document.getElementById('receipt-customer').textContent = customerData.name || '-';
+            document.getElementById('receipt-phone').textContent = customerData.phone || '-';
+        }
+
+        // Service management
+        function loadServices(searchTerm = '') {
+            console.log("Loading services...");
+            
+            let query = db.collection('services').orderBy('name');
+            
+            if (searchTerm) {
+                query = db.collection('services')
+                    .orderBy('name')
+                    .startAt(searchTerm)
+                    .endAt(searchTerm + '\uf8ff');
+            }
+            
+            query.get()
+                .then((querySnapshot) => {
+                    const serviceTable = document.getElementById('service-management-table');
+                    
+                    if (querySnapshot.empty) {
+                        serviceTable.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center">Tidak ada data layanan</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    serviceTable.innerHTML = '';
+                    
+                    querySnapshot.forEach((doc) => {
+                        const service = doc.data();
+                        const row = document.createElement('tr');
+                        
+                        row.innerHTML = `
+                            <td>${service.name || '-'}</td>
+                            <td>${service.type === 'express' ? 'Express' : 'Regular'}</td>
+                            <td>${service.category === 'kiloan' ? 'Kiloan' : 'Satuan'}</td>
+                            <td>${service.duration || '-'}</td>
+                            <td>Rp ${service.price ? service.price.toLocaleString('id-ID') : '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary edit-service-btn" data-id="${doc.id}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-service-btn" data-id="${doc.id}">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        
+                        serviceTable.appendChild(row);
+                    });
+                    
+                    // Add event listeners to edit buttons
+                    document.querySelectorAll('.edit-service-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const serviceId = this.getAttribute('data-id');
+                            editService(serviceId);
+                        });
+                    });
+                    
+                    // Add event listeners to delete buttons
+                    document.querySelectorAll('.delete-service-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const serviceId = this.getAttribute('data-id');
+                            if (confirm('Apakah Anda yakin ingin menghapus layanan ini?')) {
+                                deleteService(serviceId);
+                            }
+                        });
+                    });
+                    
+                    // Also populate the service select in transaction tab
+                    populateServiceSelect(querySnapshot);
+                })
+                .catch((error) => {
+                    console.error("Error loading services: ", error);
+                    document.getElementById('service-management-table').innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-danger">
+                                Gagal memuat data layanan: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function editService(serviceId) {
+            db.collection('services').doc(serviceId).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const service = doc.data();
+                        
+                        document.getElementById('edit-service-id').value = serviceId;
+                        document.getElementById('edit-service-name').value = service.name || '';
+                        document.getElementById('edit-service-type').value = service.type || 'regular';
+                        document.getElementById('edit-service-category').value = service.category || 'kiloan';
+                        document.getElementById('edit-service-duration').value = service.duration || 1;
+                        document.getElementById('edit-service-price').value = service.price || 0;
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('editServiceModal'));
+                        modal.show();
+                    } else {
+                        alert('Layanan tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error getting service: ", error);
+                    alert('Gagal memuat data layanan: ' + error.message);
+                });
+        }
+
+        function deleteService(serviceId) {
+            db.collection('services').doc(serviceId).delete()
+                .then(() => {
+                    alert('Layanan berhasil dihapus');
+                    loadServices();
+                })
+                .catch((error) => {
+                    console.error("Error deleting service: ", error);
+                    alert('Gagal menghapus layanan: ' + error.message);
+                });
+        }
+
+        function populateServiceSelect(querySnapshot) {
+            const serviceSelect = document.getElementById('service-select');
+            serviceSelect.innerHTML = '<option value="">Pilih Layanan...</option>';
+            
+            querySnapshot.forEach((doc) => {
+                const service = doc.data();
+                const option = document.createElement('option');
+                option.value = doc.id;
+                option.textContent = `${service.name} (${service.type === 'express' ? 'Express' : 'Regular'}, ${service.category === 'kiloan' ? 'Kiloan' : 'Satuan'}) - Rp ${service.price.toLocaleString('id-ID')}`;
+                option.setAttribute('data-price', service.price);
+                serviceSelect.appendChild(option);
+            });
+            
+            // Add event listener for service selection
+            serviceSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption.value) {
+                    document.getElementById('service-price').value = selectedOption.getAttribute('data-price');
+                    document.getElementById('service-quantity').value = 1;
+                    document.getElementById('service-subtotal').value = selectedOption.getAttribute('data-price');
+                    document.getElementById('service-details').style.display = 'block';
+                } else {
+                    document.getElementById('service-details').style.display = 'none';
+                }
+            });
+        }
+
+        function filterServices() {
+            const type = document.getElementById('service-type-select').value;
+            const category = document.getElementById('service-category-select').value;
+            
+            let query = db.collection('services');
+            
+            if (type) {
+                query = query.where('type', '==', type);
+            }
+            
+            if (category) {
+                query = query.where('category', '==', category);
+            }
+            
+            query.orderBy('name').get()
+                .then((querySnapshot) => {
+                    populateServiceSelect(querySnapshot);
+                })
+                .catch((error) => {
+                    console.error("Error filtering services: ", error);
+                    alert('Gagal memfilter layanan: ' + error.message);
+                });
+        }
+
+        // Transaction management
+        function loadTransactionHistory() {
+            const startDate = document.getElementById('history-start-date').value;
+            const endDate = document.getElementById('history-end-date').value;
+            const searchTerm = document.getElementById('history-search-term').value.trim();
+            
+            let start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            
+            let end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            
+            let transactionsQuery = db.collection('transactions')
+                .where('createdAt', '>=', start)
+                .where('createdAt', '<=', end)
+                .orderBy('createdAt', 'desc');
+            
+            if (searchTerm) {
+                // First search customers that match the search term
+                db.collection('customers')
+                    .where('name', '>=', searchTerm)
+                    .where('name', '<=', searchTerm + '\uf8ff')
+                    .get()
+                    .then((customerQuerySnapshot) => {
+                        if (customerQuerySnapshot.empty) {
+                            // No matching customers, try searching by invoice number
+                            transactionsQuery = db.collection('transactions')
+                                .where('invoiceNumber', '==', searchTerm)
+                                .orderBy('createdAt', 'desc');
+                            
+                            executeTransactionQuery(transactionsQuery);
+                        } else {
+                            const customerIds = customerQuerySnapshot.docs.map(doc => doc.id);
+                            transactionsQuery = db.collection('transactions')
+                                .where('customerId', 'in', customerIds)
+                                .orderBy('createdAt', 'desc');
+                            
+                            executeTransactionQuery(transactionsQuery);
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error searching customers: ", error);
+                        alert('Gagal mencari pelanggan: ' + error.message);
+                    });
+            } else {
+                executeTransactionQuery(transactionsQuery);
+            }
+        }
+
+        function executeTransactionQuery(query) {
+            query.get()
+                .then(async (querySnapshot) => {
+                    const historyTable = document.getElementById('history-table');
+                    
+                    if (querySnapshot.empty) {
+                        historyTable.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center">Tidak ada transaksi ditemukan</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+                    
+                    historyTable.innerHTML = '';
+                    
+                    for (const doc of querySnapshot.docs) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        const row = document.createElement('tr');
+                        
+                        row.innerHTML = `
+                            <td>${transaction.invoiceNumber || '-'}</td>
+                            <td>${transaction.createdAt.toDate().toLocaleDateString('id-ID')}</td>
+                            <td>${customer.name || '-'}</td>
+                            <td>Rp ${transaction.total ? transaction.total.toLocaleString('id-ID') : '-'}</td>
+                            <td>
+                                <span class="badge ${transaction.paymentStatus === 'lunas' ? 'bg-success' : 'bg-warning'}">
+                                    ${transaction.paymentStatus === 'lunas' ? 'Lunas' : 'Belum Lunas'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary view-transaction-btn" data-id="${doc.id}">
+                                    <i class="bi bi-eye"></i> Lihat
+                                </button>
+                            </td>
+                        `;
+                        
+                        historyTable.appendChild(row);
+                    }
+                    
+                    // Add event listeners to view buttons
+                    document.querySelectorAll('.view-transaction-btn').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const transactionId = this.getAttribute('data-id');
+                            viewTransaction(transactionId);
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error loading transaction history: ", error);
+                    document.getElementById('history-table').innerHTML = `
+                        <tr>
+                            <td colspan="6" class="text-center text-danger">
+                                Gagal memuat riwayat transaksi: ${error.message}
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+
+        function viewTransaction(transactionId) {
+            db.collection('transactions').doc(transactionId).get()
+                .then(async (doc) => {
+                    if (doc.exists) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        let servicesHtml = '';
+                        let total = 0;
+                        
+                        for (const serviceItem of transaction.services) {
+                            const serviceDoc = await db.collection('services').doc(serviceItem.serviceId).get();
+                            const service = serviceDoc.data();
+                            
+                            servicesHtml += `
+                                <div class="service-item">
+                                    <span>${service.name} x${serviceItem.quantity}</span>
+                                    <span>Rp ${serviceItem.subtotal.toLocaleString('id-ID')}</span>
+                                </div>
+                            `;
+                            
+                            total += serviceItem.subtotal;
+                        }
+                        
+                        total += transaction.deliveryFee || 0;
+                        
+                        const transactionDetail = document.getElementById('transaction-detail-content');
+                        transactionDetail.innerHTML = `
+                            <p><strong>No. Nota:</strong> ${transaction.invoiceNumber}</p>
+                            <p><strong>Tanggal:</strong> ${transaction.createdAt.toDate().toLocaleString('id-ID')}</p>
+                            <p><strong>Pelanggan:</strong> ${customer.name}</p>
+                            <p><strong>Telp:</strong> ${customer.phone}</p>
+                            <p><strong>Alamat:</strong> ${customer.address || '-'}</p>
+                            <hr>
+                            <h6>Detail Layanan:</h6>
+                            ${servicesHtml}
+                            <div class="total-section">
+                                <div class="d-flex justify-content-between">
+                                    <span>Ongkos Kirim:</span>
+                                    <span>Rp ${transaction.deliveryFee?.toLocaleString('id-ID') || '0'}</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Total:</span>
+                                    <span>Rp ${total.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <p><strong>Status:</strong> 
+                                    <span class="badge ${transaction.paymentStatus === 'lunas' ? 'bg-success' : 'bg-warning'}">
+                                        ${transaction.paymentStatus === 'lunas' ? 'LUNAS' : 'BELUM LUNAS'}
+                                    </span>
+                                </p>
+                                ${transaction.notes ? `<p><strong>Catatan:</strong> ${transaction.notes}</p>` : ''}
+                            </div>
+                        `;
+                        
+                        // Store current transaction ID for printing/re-sending
+                        currentTransactionId = transactionId;
+                        currentInvoiceNumber = transaction.invoiceNumber;
+                        
+                        // Show/hide mark as paid button based on current status
+                        document.getElementById('mark-as-paid-btn').style.display = 
+                            transaction.paymentStatus === 'lunas' ? 'none' : 'block';
+                        
+                        const modal = new bootstrap.Modal(document.getElementById('viewTransactionModal'));
+                        modal.show();
+                    } else {
+                        alert('Transaksi tidak ditemukan');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error getting transaction: ", error);
+                    alert('Gagal memuat detail transaksi: ' + error.message);
+                });
+        }
+
+        // Report generation
+        function generateDailyReport() {
+            const date = document.getElementById('daily-report-date').value;
+            const start = new Date(date);
+            start.setHours(0, 0, 0, 0);
+            
+            const end = new Date(date);
+            end.setHours(23, 59, 59, 999);
+            
+            db.collection('transactions')
+                .where('createdAt', '>=', start)
+                .where('createdAt', '<=', end)
+                .get()
+                .then(async (querySnapshot) => {
+                    const transactions = [];
+                    
+                    for (const doc of querySnapshot.docs) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        transactions.push({
+                            ...transaction,
+                            customerName: customer.name,
+                            date: transaction.createdAt.toDate()
+                        });
+                    }
+                    
+                    const totalRevenue = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+                    const paidCount = transactions.filter(t => t.paymentStatus === 'lunas').length;
+                    const unpaidCount = transactions.filter(t => t.paymentStatus === 'belum').length;
+                    
+                    const reportResult = document.getElementById('daily-report-result');
+                    reportResult.innerHTML = `
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Ringkasan Harian</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-success mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Transaksi</h5>
+                                                <p class="card-text display-6">${transactions.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-info mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Pendapatan</h5>
+                                                <p class="card-text display-6">Rp ${totalRevenue.toLocaleString('id-ID')}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white ${paidCount > 0 ? 'bg-success' : 'bg-secondary'} mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Lunas</h5>
+                                                <p class="card-text display-6">${paidCount}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="mt-4">Detail Transaksi</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>No. Nota</th>
+                                                <th>Waktu</th>
+                                                <th>Pelanggan</th>
+                                                <th>Total</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${transactions.map(t => `
+                                                <tr>
+                                                    <td>${t.invoiceNumber}</td>
+                                                    <td>${t.date.toLocaleTimeString('id-ID')}</td>
+                                                    <td>${t.customerName}</td>
+                                                    <td>Rp ${t.total.toLocaleString('id-ID')}</td>
+                                                    <td>
+                                                        <span class="badge ${t.paymentStatus === 'lunas' ? 'bg-success' : 'bg-warning'}">
+                                                            ${t.paymentStatus === 'lunas' ? 'Lunas' : 'Belum'}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch((error) => {
+                    console.error('Error generating daily report:', error);
+                    document.getElementById('daily-report-result').innerHTML = `
+                        <div class="alert alert-danger">Gagal memuat laporan harian: ${error.message}</div>
+                    `;
+                });
+        }
+
+        function generateMonthlyReport() {
+            const month = parseInt(document.getElementById('monthly-report-month').value);
+            const year = parseInt(document.getElementById('monthly-report-year').value);
+            
+            const start = new Date(year, month - 1, 1);
+            const end = new Date(year, month, 0);
+            end.setHours(23, 59, 59, 999);
+            
+            db.collection('transactions')
+                .where('createdAt', '>=', start)
+                .where('createdAt', '<=', end)
+                .get()
+                .then(async (querySnapshot) => {
+                    const transactions = [];
+                    
+                    for (const doc of querySnapshot.docs) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        transactions.push({
+                            ...transaction,
+                            customerName: customer.name,
+                            date: transaction.createdAt.toDate()
+                        });
+                    }
+                    
+                    const totalRevenue = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+                    const paidCount = transactions.filter(t => t.paymentStatus === 'lunas').length;
+                    const unpaidCount = transactions.filter(t => t.paymentStatus === 'belum').length;
+                    
+                    // Group by day
+                    const daysInMonth = end.getDate();
+                    const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        const dayTransactions = transactions.filter(t => 
+                            t.date.getDate() === day
+                        );
+                        
+                        return {
+                            day,
+                            transactions: dayTransactions.length,
+                            revenue: dayTransactions.reduce((sum, t) => sum + (t.total || 0), 0)
+                        };
+                    });
+                    
+                    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    
+                    const reportResult = document.getElementById('monthly-report-result');
+                    reportResult.innerHTML = `
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Ringkasan Bulanan - ${monthNames[month - 1]} ${year}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-success mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Transaksi</h5>
+                                                <p class="card-text display-6">${transactions.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-info mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Pendapatan</h5>
+                                                <p class="card-text display-6">Rp ${totalRevenue.toLocaleString('id-ID')}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white ${paidCount > 0 ? 'bg-success' : 'bg-secondary'} mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Lunas</h5>
+                                                <p class="card-text display-6">${paidCount}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="mt-4">Rekapitulasi Harian</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Tanggal</th>
+                                                <th>Jumlah Transaksi</th>
+                                                <th>Pendapatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${dailyData.map(d => `
+                                                <tr>
+                                                    <td>${d.day} ${monthNames[month - 1]}</td>
+                                                    <td>${d.transactions}</td>
+                                                    <td>Rp ${d.revenue.toLocaleString('id-ID')}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch((error) => {
+                    console.error('Error generating monthly report:', error);
+                    document.getElementById('monthly-report-result').innerHTML = `
+                        <div class="alert alert-danger">Gagal memuat laporan bulanan: ${error.message}</div>
+                    `;
+                });
+        }
+
+        function generateYearlyReport() {
+            const year = parseInt(document.getElementById('yearly-report-year').value);
+            
+            const start = new Date(year, 0, 1);
+            const end = new Date(year, 11, 31);
+            end.setHours(23, 59, 59, 999);
+            
+            db.collection('transactions')
+                .where('createdAt', '>=', start)
+                .where('createdAt', '<=', end)
+                .get()
+                .then(async (querySnapshot) => {
+                    const transactions = [];
+                    
+                    for (const doc of querySnapshot.docs) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        transactions.push({
+                            ...transaction,
+                            customerName: customer.name,
+                            date: transaction.createdAt.toDate()
+                        });
+                    }
+                    
+                    const totalRevenue = transactions.reduce((sum, t) => sum + (t.total || 0), 0);
+                    const paidCount = transactions.filter(t => t.paymentStatus === 'lunas').length;
+                    const unpaidCount = transactions.filter(t => t.paymentStatus === 'belum').length;
+                    
+                    // Group by month
+                    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                                      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                    const monthlyData = monthNames.map((month, index) => {
+                        const monthTransactions = transactions.filter(t => 
+                            t.date.getMonth() === index
+                        );
+                        
+                        return {
+                            month: month,
+                            transactions: monthTransactions.length,
+                            revenue: monthTransactions.reduce((sum, t) => sum + (t.total || 0), 0)
+                        };
+                    });
+                    
+                    const reportResult = document.getElementById('yearly-report-result');
+                    reportResult.innerHTML = `
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Ringkasan Tahunan - ${year}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-success mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Transaksi</h5>
+                                                <p class="card-text display-6">${transactions.length}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white bg-info mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Total Pendapatan</h5>
+                                                <p class="card-text display-6">Rp ${totalRevenue.toLocaleString('id-ID')}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card text-white ${paidCount > 0 ? 'bg-success' : 'bg-secondary'} mb-3">
+                                            <div class="card-body">
+                                                <h5 class="card-title">Lunas</h5>
+                                                <p class="card-text display-6">${paidCount}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <h5 class="mt-4">Rekapitulasi Bulanan</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Bulan</th>
+                                                <th>Jumlah Transaksi</th>
+                                                <th>Pendapatan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${monthlyData.map(m => `
+                                                <tr>
+                                                    <td>${m.month}</td>
+                                                    <td>${m.transactions}</td>
+                                                    <td>Rp ${m.revenue.toLocaleString('id-ID')}</td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch((error) => {
+                    console.error('Error generating yearly report:', error);
+                    document.getElementById('yearly-report-result').innerHTML = `
+                        <div class="alert alert-danger">Gagal memuat laporan tahunan: ${error.message}</div>
+                    `;
+                });
+        }
+
+        // Update selected services table
+        function updateSelectedServicesTable() {
+            const tableBody = document.getElementById('selected-services-body');
+            tableBody.innerHTML = '';
+            
+            let total = 0;
+            
+            selectedServices.forEach((service, index) => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${service.name}</td>
+                    <td>${service.quantity}</td>
+                    <td>Rp ${service.price.toLocaleString('id-ID')}</td>
+                    <td>Rp ${service.subtotal.toLocaleString('id-ID')}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger remove-service-btn" data-index="${index}">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+                total += service.subtotal;
+            });
+            
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-service-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    selectedServices.splice(index, 1);
+                    updateSelectedServicesTable();
+                    updateReceiptPreview();
+                });
+            });
+        }
+
+        // Update receipt preview
+        function updateReceiptPreview() {
+            const servicesContainer = document.getElementById('receipt-services');
+            servicesContainer.innerHTML = '';
+            
+            let total = 0;
+            const deliveryFee = parseFloat(document.getElementById('delivery-fee').value) || 0;
+            
+            selectedServices.forEach(service => {
+                const serviceItem = document.createElement('div');
+                serviceItem.className = 'service-item';
+                serviceItem.innerHTML = `
+                    <span>${service.name} x${service.quantity}</span>
+                    <span>Rp ${service.subtotal.toLocaleString('id-ID')}</span>
+                `;
+                servicesContainer.appendChild(serviceItem);
+                total += service.subtotal;
+            });
+            
+            total += deliveryFee;
+            
+            // Update totals
+            document.getElementById('receipt-delivery').textContent = `Rp ${deliveryFee.toLocaleString('id-ID')}`;
+            document.getElementById('receipt-total').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            
+            // Update date
+            const now = new Date();
+            document.getElementById('receipt-date').textContent = now.toLocaleString('id-ID');
+        }
+
+        // Initialize report buttons
+        document.getElementById('generate-daily-report-btn').addEventListener('click', generateDailyReport);
+        document.getElementById('generate-monthly-report-btn').addEventListener('click', generateMonthlyReport);
+        document.getElementById('generate-yearly-report-btn').addEventListener('click', generateYearlyReport);
+        document.getElementById('history-search-btn').addEventListener('click', loadTransactionHistory);
+
+        // Initialize transaction history buttons
+        document.getElementById('print-history-receipt-btn').addEventListener('click', function() {
+            if (!currentTransactionId) {
+                alert('Tidak ada transaksi yang dipilih');
+                return;
+            }
+            
+            db.collection('transactions').doc(currentTransactionId).get()
+                .then(async (doc) => {
+                    if (doc.exists) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        let servicesHtml = '';
+                        let total = 0;
+                        
+                        for (const serviceItem of transaction.services) {
+                            const serviceDoc = await db.collection('services').doc(serviceItem.serviceId).get();
+                            const service = serviceDoc.data();
+                            
+                            servicesHtml += `
+                                <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px;">
+                                    <span>${service.name} x${serviceItem.quantity}</span>
+                                    <span>Rp ${serviceItem.subtotal.toLocaleString('id-ID')}</span>
+                                </div>
+                            `;
+                            
+                            total += serviceItem.subtotal;
+                        }
+                        
+                        total += transaction.deliveryFee || 0;
+                        
+                        // Update print section
+                        const printContent = `
+                            <div style="text-align: center; font-weight: bold; font-size: 12px; margin-bottom: 5px;">
+                                HANIFA LAUNDRY
+                            </div>
+                            <div style="text-align: center; font-size: 9px; margin-bottom: 5px;">
+                                Kalibagor, Banyumas
+                            </div>
+                            <div style="text-align: center; font-size: 9px; margin-bottom: 5px;">
+                                Telp: 085641344448
+                            </div>
+                            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                            
+                            <div style="font-size: 9px; margin-bottom: 3px;">
+                                <strong>No. Nota:</strong> ${transaction.invoiceNumber}
+                            </div>
+                            <div style="font-size: 9px; margin-bottom: 3px;">
+                                <strong>Tanggal:</strong> ${transaction.createdAt.toDate().toLocaleString('id-ID')}
+                            </div>
+                            <div style="font-size: 9px; margin-bottom: 3px;">
+                                <strong>Pelanggan:</strong> ${customer.name}
+                            </div>
+                            <div style="font-size: 9px; margin-bottom: 5px;">
+                                <strong>Telp:</strong> ${customer.phone}
+                            </div>
+                            
+                            <div style="border-top: 1px dashed #000; margin: 5px 0;"></div>
+                            
+                            <div style="font-weight: bold; font-size: 9px; margin-bottom: 5px;">
+                                Detail Layanan:
+                            </div>
+                            
+                            ${servicesHtml}
+                            
+                            <div style="border-top: 1px solid #000; margin: 5px 0; padding-top: 5px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px;">
+                                    <span>Ongkos Kirim:</span>
+                                    <span>Rp ${transaction.deliveryFee?.toLocaleString('id-ID') || '0'}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 10px;">
+                                    <span>TOTAL:</span>
+                                    <span>Rp ${total.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                            
+                            <div style="font-size: 9px; margin-top: 5px;">
+                                <strong>Status:</strong> 
+                                <span>${transaction.paymentStatus === 'lunas' ? 'LUNAS' : 'BELUM LUNAS'}</span>
+                            </div>
+                            ${transaction.notes ? `<div style="font-size: 9px; margin-top: 3px;"><strong>Catatan:</strong> ${transaction.notes}</div>` : ''}
+                            
+                            <div style="border-top: 1px dashed #000; margin: 5px 0; padding-top: 5px; font-size: 8px; text-align: center; font-style: italic;">
+                                <div>Terima kasih atas kunjungan Anda</div>
+                                <div>Barang yang sudah dicuci tidak dapat ditukar/dikembalikan</div>
+                            </div>
+                        `;
+                        
+                        document.getElementById('print-section').innerHTML = printContent;
+                        
+                        // Print the receipt
+                        setTimeout(() => {
+                            window.print();
+                        }, 200);
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error getting transaction: ", error);
+                    alert('Gagal memuat detail transaksi: ' + error.message);
+                });
+        });
+
+        document.getElementById('send-whatsapp-history-btn').addEventListener('click', function() {
+            if (!currentTransactionId) {
+                alert('Tidak ada transaksi yang dipilih');
+                return;
+            }
+            
+            db.collection('transactions').doc(currentTransactionId).get()
+                .then(async (doc) => {
+                    if (doc.exists) {
+                        const transaction = doc.data();
+                        const customerDoc = await db.collection('customers').doc(transaction.customerId).get();
+                        const customer = customerDoc.data();
+                        
+                        // Prepare message
+                        let message = `*HANIFA LAUNDRY*\n`;
+                        message += `Kalibagor, Banyumas\n`;
+                        message += `Telp: 085641344448\n\n`;
+                        message += `*Nota Laundry*\n`;
+                        message += `No. Nota: ${transaction.invoiceNumber}\n`;
+                        message += `Tanggal: ${transaction.createdAt.toDate().toLocaleString('id-ID')}\n`;
+                        message += `Pelanggan: ${customer.name}\n`;
+                        message += `Telp: ${customer.phone}\n\n`;
+                        message += `*Detail Layanan:*\n`;
+                        
+                        let total = 0;
+                        for (const serviceItem of transaction.services) {
+                            const serviceDoc = await db.collection('services').doc(serviceItem.serviceId).get();
+                            const service = serviceDoc.data();
+                            
+                            message += `${service.name} x${serviceItem.quantity}: Rp ${serviceItem.subtotal.toLocaleString('id-ID')}\n`;
+                            total += serviceItem.subtotal;
+                        }
+                        
+                        total += transaction.deliveryFee || 0;
+                        
+                        message += `\nOngkos Kirim: Rp ${transaction.deliveryFee?.toLocaleString('id-ID') || '0'}\n`;
+                        message += `*TOTAL: Rp ${total.toLocaleString('id-ID')}*\n\n`;
+                        message += `Status: ${transaction.paymentStatus === 'lunas' ? 'LUNAS' : 'BELUM LUNAS'}\n\n`;
+                        message += `Terima kasih telah menggunakan layanan Hanifa Laundry.`;
+                        
+                        // Encode message for WhatsApp URL
+                        const encodedMessage = encodeURIComponent(message);
+                        const phone = customer.phone.replace(/^0/, '62');
+                        const whatsappUrl = `https://wa.me/${phone}?text=${encodedMessage}`;
+                        
+                        // Open WhatsApp in new tab
+                        window.open(whatsappUrl, '_blank');
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error getting transaction: ", error);
+                    alert('Gagal memuat detail transaksi: ' + error.message);
+                });
+        });
+
+        document.getElementById('mark-as-paid-btn').addEventListener('click', function() {
+            if (!currentTransactionId) {
+                alert('Tidak ada transaksi yang dipilih');
+                return;
+            }
+            
+            if (confirm('Apakah Anda yakin ingin menandai transaksi ini sebagai LUNAS?')) {
+                db.collection('transactions').doc(currentTransactionId).update({
+                    paymentStatus: 'lunas',
+                    completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                })
+                .then(() => {
+                    alert('Transaksi berhasil ditandai sebagai LUNAS');
+                    bootstrap.Modal.getInstance(document.getElementById('viewTransactionModal')).hide();
+                    loadTransactionHistory();
+                })
+                .catch((error) => {
+                    console.error("Error updating transaction status: ", error);
+                    alert('Gagal memperbarui status transaksi: ' + error.message);
+                });
+            }
+        });
+
+        // Save edit customer
+        document.getElementById('save-edit-customer-btn').addEventListener('click', function() {
+            const customerId = document.getElementById('edit-customer-id').value;
+            const customerData = {
+                name: document.getElementById('edit-customer-name').value.trim(),
+                phone: document.getElementById('edit-customer-phone').value.trim(),
+                address: document.getElementById('edit-customer-address').value.trim(),
+                notes: document.getElementById('edit-customer-notes').value.trim()
+            };
+            
+            if (!customerData.name || !customerData.phone) {
+                alert('Nama dan No HP pelanggan harus diisi');
+                return;
+            }
+            
+            db.collection('customers').doc(customerId).update(customerData)
+                .then(() => {
+                    alert('Pelanggan berhasil diperbarui');
+                    bootstrap.Modal.getInstance(document.getElementById('editCustomerModal')).hide();
+                    loadCustomers();
+                    
+                    // Update current customer if it's the same one
+                    if (currentCustomer && currentCustomer.id === customerId) {
+                        currentCustomer = { ...currentCustomer, ...customerData };
+                        document.getElementById('customer-name-display').textContent = customerData.name;
+                        document.getElementById('customer-phone-display').textContent = customerData.phone;
+                        document.getElementById('customer-address-display').textContent = customerData.address || '-';
+                        document.getElementById('receipt-customer').textContent = customerData.name;
+                        document.getElementById('receipt-phone').textContent = customerData.phone;
+                    }
+                })
+                .catch((error) => {
+                    console.error("Error updating customer: ", error);
+                    alert('Gagal memperbarui pelanggan: ' + error.message);
+                });
+        });
+
+        // Save edit service
+        document.getElementById('save-edit-service-btn').addEventListener('click', function() {
+            const serviceId = document.getElementById('edit-service-id').value;
+            const serviceData = {
+                name: document.getElementById('edit-service-name').value.trim(),
+                type: document.getElementById('edit-service-type').value,
+                category: document.getElementById('edit-service-category').value,
+                duration: parseInt(document.getElementById('edit-service-duration').value) || 0,
+                price: parseInt(document.getElementById('edit-service-price').value) || 0
+            };
+            
+            if (!serviceData.name || serviceData.duration <= 0 || serviceData.price <= 0) {
+                alert('Semua field harus diisi dengan nilai valid');
+                return;
+            }
+            
+            db.collection('services').doc(serviceId).update(serviceData)
+                .then(() => {
+                    alert('Layanan berhasil diperbarui');
+                    bootstrap.Modal.getInstance(document.getElementById('editServiceModal')).hide();
+                    loadServices();
+                })
+                .catch((error) => {
+                    console.error("Error updating service: ", error);
+                    alert('Gagal memperbarui layanan: ' + error.message);
+                });
+        });
+
+        // Initialize with today's daily report
+        generateDailyReport();
+    </script>
+</body>
+</html>
