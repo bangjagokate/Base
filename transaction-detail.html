@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Nota Laundry - Laundry System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <style>
+        .invoice-box {
+            max-width: 800px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #eee;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+            font-size: 16px;
+            line-height: 24px;
+            font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+            color: #555;
+        }
+        .invoice-box table {
+            width: 100%;
+            line-height: inherit;
+            text-align: left;
+        }
+        .invoice-box table td {
+            padding: 5px;
+            vertical-align: top;
+        }
+        .invoice-box table tr td:nth-child(2) {
+            text-align: right;
+        }
+        .invoice-box table tr.top table td {
+            padding-bottom: 20px;
+        }
+        .invoice-box table tr.top table td.title {
+            font-size: 45px;
+            line-height: 45px;
+            color: #333;
+        }
+        .invoice-box table tr.information table td {
+            padding-bottom: 40px;
+        }
+        .invoice-box table tr.heading td {
+            background: #eee;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .invoice-box table tr.details td {
+            padding-bottom: 20px;
+        }
+        .invoice-box table tr.item td {
+            border-bottom: 1px solid #eee;
+        }
+        .invoice-box table tr.item.last td {
+            border-bottom: none;
+        }
+        .invoice-box table tr.total td:nth-child(2) {
+            border-top: 2px solid #eee;
+            font-weight: bold;
+        }
+        @media only screen and (max-width: 600px) {
+            .invoice-box table tr.top table td {
+                width: 100%;
+                display: block;
+                text-align: center;
+            }
+            .invoice-box table tr.information table td {
+                width: 100%;
+                display: block;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between mb-4">
+            <a href="transactions.html" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Kembali
+            </a>
+            <div>
+                <button class="btn btn-primary me-2" id="printInvoiceBtn">
+                    <i class="bi bi-printer me-1"></i>Cetak
+                </button>
+                <a href="#" class="btn btn-success" id="whatsappBtn">
+                    <i class="bi bi-whatsapp me-1"></i>Kirim WhatsApp
+                </a>
+            </div>
+        </div>
+
+        <div class="invoice-box" id="invoiceContent">
+            <table cellpadding="0" cellspacing="0">
+                <tr class="top">
+                    <td colspan="2">
+                        <table>
+                            <tr>
+                                <td class="title">
+                                    <img src="https://via.placeholder.com/150x50?text=Laundry+Kita" style="width:100%; max-width:150px;">
+                                </td>
+                                <td>
+                                    Nota #: <span id="invoiceNumber"></span><br>
+                                    Tanggal: <span id="invoiceDate"></span><br>
+                                    Estimasi Selesai: <span id="invoiceEstimate"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                
+                <tr class="information">
+                    <td colspan="2">
+                        <table>
+                            <tr>
+                                <td>
+                                    Laundry Kita<br>
+                                    Jl. Contoh No. 123<br>
+                                    Kota, 12345<br>
+                                    Telp: (021) 123-4567
+                                </td>
+                                <td>
+                                    <strong>Pelanggan:</strong><br>
+                                    <span id="customerName"></span><br>
+                                    <span id="customerPhone"></span><br>
+                                    <span id="customerAddress"></span>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+                
+                <tr class="heading">
+                    <td>Layanan</td>
+                    <td>Harga</td>
+                </tr>
+                
+                <tbody id="serviceItems">
+                    <!-- Service items will be populated by JavaScript -->
+                </tbody>
+                
+                <tr class="total">
+                    <td></td>
+                    <td>
+                        Subtotal: <span id="subtotalAmount"></span><br>
+                        Ongkos Kirim: <span id="deliveryFee"></span><br>
+                        Pajak (10%): <span id="taxAmount"></span><br>
+                        <strong>Total: <span id="totalAmount"></span></strong><br>
+                        <span class="text-success">Status: <span id="paymentStatus"></span></span>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td colspan="2" class="text-center py-4">
+                        <div id="qrCodeContainer"></div>
+                        <small>Scan QR code untuk mengecek status laundry</small>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <td colspan="2">
+                        <strong>Catatan:</strong><br>
+                        <span id="invoiceNotes"></span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4J5Q2ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ",
+            authDomain: "laundryapp-87cb5.firebaseapp.com",
+            databaseURL: "https://laundryapp-87cb5-default-rtdb.firebaseio.com",
+            projectId: "laundryapp-87cb5",
+            storageBucket: "laundryapp-87cb5.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef1234567890"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // Check authentication state
+        auth.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = "login.html";
+            } else {
+                // Get transaction ID from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const transactionId = urlParams.get('id');
+                
+                if (transactionId) {
+                    loadTransactionDetails(transactionId);
+                } else {
+                    alert('ID transaksi tidak valid!');
+                    window.location.href = "transactions.html";
+                }
+            }
+        });
+
+        // Load transaction details
+        function loadTransactionDetails(transactionId) {
+            database.ref('transactions/' + transactionId).once('value', (snapshot) => {
+                const transaction = snapshot.val();
+                
+                if (!transaction) {
+                    alert('Transaksi tidak ditemukan!');
+                    window.location.href = "transactions.html";
+                    return;
+                }
+                
+                // Display basic info
+                document.getElementById('invoiceNumber').textContent = transaction.invoiceNumber || 'N/A';
+                document.getElementById('invoiceDate').textContent = transaction.date || 'N/A';
+                document.getElementById('invoiceEstimate').textContent = transaction.estimateDate || 'N/A';
+                document.getElementById('customerName').textContent = transaction.customerName || 'N/A';
+                document.getElementById('invoiceNotes').textContent = transaction.notes || '-';
+                
+                // Load customer details
+                if (transaction.customerId) {
+                    database.ref('customers/' + transaction.customerId).once('value', (customerSnapshot) => {
+                        const customer = customerSnapshot.val();
+                        if (customer) {
+                            document.getElementById('customerPhone').textContent = customer.phone || 'N/A';
+                            document.getElementById('customerAddress').textContent = customer.address || 'N/A';
+                        }
+                    });
+                }
+                
+                // Display services
+                const serviceItems = document.getElementById('serviceItems');
+                serviceItems.innerHTML = '';
+                
+                if (transaction.services && transaction.services.length > 0) {
+                    transaction.services.forEach(service => {
+                        const row = document.createElement('tr');
+                        row.className = 'item';
+                        row.innerHTML = `
+                            <td>
+                                ${service.name}<br>
+                                <small>${service.weight} kg × Rp${service.price.toLocaleString('id-ID')}</small>
+                            </td>
+                            <td>Rp${service.subtotal.toLocaleString('id-ID')}</td>
+                        `;
+                        serviceItems.appendChild(row);
+                    });
+                }
+                
+                // Display totals
+                document.getElementById('subtotalAmount').textContent = 'Rp' + (transaction.subtotal || 0).toLocaleString('id-ID');
+                document.getElementById('deliveryFee').textContent = 'Rp' + (transaction.deliveryFee || 0).toLocaleString('id-ID');
+                document.getElementById('taxAmount').textContent = 'Rp' + (transaction.tax || 0).toLocaleString('id-ID');
+                document.getElementById('totalAmount').textContent = 'Rp' + (transaction.total || 0).toLocaleString('id-ID');
+                document.getElementById('paymentStatus').textContent = transaction.paymentStatus === 'LUNAS' ? 'LUNAS' : 'BELUM LUNAS';
+                
+                // Load QR code
+                loadQRCode(transactionId, transaction.invoiceNumber);
+                
+                // Set WhatsApp link
+                const whatsappBtn = document.getElementById('whatsappBtn');
+                whatsappBtn.href = `whatsapp://send?text=Nota Laundry Anda: ${window.location.origin}/status-nota.html?id=${transactionId}`;
+            });
+        }
+
+        // Load QR code
+        function loadQRCode(transactionId, invoiceNumber) {
+            database.ref('transactionQRCodes/' + transactionId).once('value', (snapshot) => {
+                const qrData = snapshot.val();
+                
+                if (qrData && qrData.qrCodeSvg) {
+                    document.getElementById('qrCodeContainer').innerHTML = qrData.qrCodeSvg;
+                } else {
+                    // Generate QR code if not exists
+                    const qr = qrcode(0, 'L');
+                    const statusUrl = `${window.location.origin}/status-nota.html?id=${transactionId}`;
+                    qr.addData(statusUrl);
+                    qr.make();
+                    
+                    const qrCodeSvg = qr.createSvgTag(4);
+                    document.getElementById('qrCodeContainer').innerHTML = qrCodeSvg;
+                    
+                    // Save to Firebase
+                    database.ref('transactionQRCodes').child(transactionId).set({
+                        invoiceNumber,
+                        qrCodeSvg,
+                        statusUrl,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                }
+            });
+        }
+
+        // Print invoice
+        document.getElementById('printInvoiceBtn').addEventListener('click', () => {
+            const printContents = document.getElementById('invoiceContent').innerHTML;
+            const originalContents = document.body.innerHTML;
+            
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+            window.location.reload();
+        });
+    </script>
+</body>
+</html>
