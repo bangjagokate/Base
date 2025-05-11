@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Nota Laundry - Laundry System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        .status-card {
+            max-width: 600px;
+            margin: 0 auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .status-header {
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        .qr-code {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="card status-card">
+            <div class="card-header status-header bg-primary text-white">
+                <h4 class="text-center mb-0">Status Laundry</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div id="qrCode" class="qr-code mb-3"></div>
+                    <h5 id="invoiceNumber" class="mb-1"></h5>
+                    <small class="text-muted">Scan QR code untuk verifikasi</small>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p class="mb-1 text-muted">Tanggal Masuk</p>
+                        <p id="entryDate" class="fw-bold"></p>
+                    </div>
+                    <div class="col-6 text-end">
+                        <p class="mb-1 text-muted">Estimasi Selesai</p>
+                        <p id="estimateDate" class="fw-bold"></p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-1 text-muted">Pelanggan</p>
+                    <p id="customerName" class="fw-bold"></p>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-1 text-muted">Status Pembayaran</p>
+                    <p id="paymentStatus" class="fw-bold"></p>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-1 text-muted">Status Laundry</p>
+                    <div class="progress" style="height: 20px;">
+                        <div id="laundryProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <p id="laundryStatusText" class="text-center mt-2 fw-bold"></p>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="#" id="whatsappBtn" class="btn btn-success me-2">
+                        <i class="bi bi-whatsapp me-1"></i>Hubungi Kami
+                    </a>
+                    <button id="printBtn" class="btn btn-primary">
+                        <i class="bi bi-printer me-1"></i>Cetak Nota
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD4J5Q2ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ3ZQ",
+            authDomain: "laundryapp-87cb5.firebaseapp.com",
+            databaseURL: "https://laundryapp-87cb5-default-rtdb.firebaseio.com",
+            projectId: "laundryapp-87cb5",
+            storageBucket: "laundryapp-87cb5.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef1234567890"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Get transaction ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const transactionId = urlParams.get('id');
+
+        if (transactionId) {
+            loadTransactionStatus(transactionId);
+        } else {
+            document.getElementById('invoiceNumber').textContent = 'Nota tidak valid';
+        }
+
+        // Load transaction status
+        function loadTransactionStatus(transactionId) {
+            database.ref('transactions/' + transactionId).once('value', (snapshot) => {
+                const transaction = snapshot.val();
+                
+                if (!transaction) {
+                    document.getElementById('invoiceNumber').textContent = 'Nota tidak ditemukan';
+                    return;
+                }
+                
+                // Display basic info
+                document.getElementById('invoiceNumber').textContent = transaction.invoiceNumber || 'N/A';
+                document.getElementById('entryDate').textContent = transaction.date || 'N/A';
+                document.getElementById('estimateDate').textContent = transaction.estimateDate || 'N/A';
+                document.getElementById('customerName').textContent = transaction.customerName || 'N/A';
+                
+                // Payment status
+                const paymentStatus = document.getElementById('paymentStatus');
+                if (transaction.paymentStatus === 'LUNAS') {
+                    paymentStatus.textContent = 'LUNAS';
+                    paymentStatus.className = 'fw-bold text-success';
+                } else {
+                    paymentStatus.textContent = 'BELUM LUNAS';
+                    paymentStatus.className = 'fw-bold text-danger';
+                }
+                
+                // Laundry status (simplified - in a real app, you'd track actual progress)
+                const now = new Date();
+                const entryDate = new Date(transaction.date);
+                const estimateDate = new Date(transaction.estimateDate);
+                
+                let progress = 0;
+                let statusText = 'Dalam Antrian';
+                
+                if (now > estimateDate) {
+                    progress = 100;
+                    statusText = 'Selesai';
+                } else if (now > entryDate) {
+                    const totalTime = estimateDate - entryDate;
+                    const elapsedTime = now - entryDate;
+                    progress = Math.min(100, Math.round((elapsedTime / totalTime) * 100));
+                    
+                    if (progress < 30) {
+                        statusText = 'Dalam Pencucian';
+                    } else if (progress < 70) {
+                        statusText = 'Dalam Penyeterikaan';
+                    } else {
+                        statusText = 'Siap Diambil';
+                    }
+                }
+                
+                document.getElementById('laundryProgress').style.width = progress + '%';
+                document.getElementById('laundryStatusText').textContent = statusText;
+                
+                // Set WhatsApp link
+                const whatsappBtn = document.getElementById('whatsappBtn');
+                whatsappBtn.href = `https://wa.me/6281234567890?text=Saya ingin menanyakan status laundry dengan nomor nota: ${transaction.invoiceNumber}`;
+                
+                // Generate QR code
+                const qr = qrcode(0, 'L');
+                qr.addData(window.location.href);
+                qr.make();
+                document.getElementById('qrCode').innerHTML = qr.createSvgTag(2);
+                
+                // Print button
+                document.getElementById('printBtn').addEventListener('click', () => {
+                    window.print();
+                });
+            });
+        }
+    </script>
+</body>
+</html>
