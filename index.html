@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laundry Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .sidebar {
+            background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .card {
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+        }
+        .stat-card {
+            border-left: 4px solid;
+        }
+        .stat-card.total {
+            border-left-color: #4e73df;
+        }
+        .stat-card.paid {
+            border-left-color: #1cc88a;
+        }
+        .stat-card.pending {
+            border-left-color: #f6c23e;
+        }
+        .stat-card.canceled {
+            border-left-color: #e74a3b;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container" class="container mt-5" style="max-width: 400px;">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h3 class="mb-4">Laundry System Login</h3>
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <input type="email" class="form-control" id="email" placeholder="Email" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Login</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-content" style="display: none;">
+        <!-- Konten aplikasi akan dimuat di sini -->
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <script>
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyAi9G44WIIluagcBWq6D5AdphSRiRF5B9E",
+            authDomain: "laundryapp-87cb5.firebaseapp.com",
+            databaseURL: "https://laundryapp-87cb5-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "laundryapp-87cb5",
+            storageBucket: "laundryapp-87cb5.appspot.com",
+            messagingSenderId: "260622327214",
+            appId: "1:260622327214:web:ac14068843eb6756a9fc3f",
+            measurementId: "G-BRHJD4NY1N"
+        };
+
+        // Inisialisasi Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // Fungsi untuk menampilkan notifikasi
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.role = 'alert';
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.body.prepend(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        // Fungsi untuk memformat mata uang
+        function formatCurrency(amount) {
+            return 'Rp' + (amount || 0).toLocaleString('id-ID');
+        }
+
+        // Fungsi untuk memformat tanggal
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // ==================== AUTHENTICATION ====================
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Login berhasil
+                    showAlert('Login berhasil!', 'success');
+                    document.getElementById('login-container').style.display = 'none';
+                    document.getElementById('app-content').style.display = 'block';
+                    loadAppContent();
+                })
+                .catch((error) => {
+                    showAlert('Login gagal: ' + error.message, 'danger');
+                });
+        });
+
+        // ==================== APP CONTENT ====================
+        function loadAppContent() {
+            // Load sidebar dan main content
+            document.getElementById('app-content').innerHTML = `
+                <div class="container-fluid">
+                    <div class="row">
+                        <!-- Sidebar -->
+                        <div class="col-md-3 col-lg-2 d-md-block sidebar">
+                            <div class="position-sticky pt-3">
+                                <div class="text-center mb-4">
+                                    <h5 class="text-white">Laundry System</h5>
+                                </div>
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" href="#" data-page="dashboard">
+                                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" data-page="customers">
+                                            <i class="bi bi-people me-2"></i> Pelanggan
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" data-page="services">
+                                            <i class="bi bi-list-task me-2"></i> Layanan
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" data-page="transactions">
+                                            <i class="bi bi-receipt me-2"></i> Transaksi
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" data-page="reports">
+                                            <i class="bi bi-bar-chart me-2"></i> Laporan
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#" data-page="settings">
+                                            <i class="bi bi-gear me-2"></i> Pengaturan
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button class="nav-link btn btn-link text-start" id="logoutBtn">
+                                            <i class="bi bi-box-arrow-left me-2"></i> Logout
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Main Content -->
+                        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4" id="main-content">
+                            <!-- Konten akan dimuat dinamis di sini -->
+                        </main>
+                    </div>
+                </div>
+
+                <!-- Modal Tambah Pelanggan -->
+                <div class="modal fade" id="addCustomerModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Tambah Pelanggan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="customerForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nama</label>
+                                        <input type="text" class="form-control" id="customerName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Nomor HP</label>
+                                        <input type="tel" class="form-control" id="customerPhone" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Alamat</label>
+                                        <textarea class="form-control" id="customerAddress"></textarea>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" id="saveCustomerBtn">Simpan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Tambah Layanan -->
+                <div class="modal fade" id="addServiceModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Tambah Layanan</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="serviceForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nama Layanan</label>
+                                        <input type="text" class="form-control" id="serviceName" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Harga</label>
+                                        <input type="number" class="form-control" id="servicePrice" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" id="saveServiceBtn">Simpan</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Tambah Transaksi -->
+                <div class="modal fade" id="addTransactionModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Transaksi Baru</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="transactionForm">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Pelanggan</label>
+                                            <select class="form-select" id="transactionCustomer" required>
+                                                <option value="">Pilih Pelanggan</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Tanggal</label>
+                                            <input type="datetime-local" class="form-control" id="transactionDate" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Status Pembayaran</label>
+                                        <select class="form-select" id="transactionStatus" required>
+                                            <option value="BELUM">Belum Bayar</option>
+                                            <option value="LUNAS">Lunas</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Catatan</label>
+                                        <textarea class="form-control" id="transactionNote"></textarea>
+                                    </div>
+                                    
+                                    <h5 class="mt-4">Item Layanan</h5>
+                                    <div class="table-responsive">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Layanan</th>
+                                                    <th>Harga</th>
+                                                    <th>Jumlah</th>
+                                                    <th>Subtotal</th>
+                                                    <th></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="transactionItems">
+                                                <!-- Item transaksi akan ditambahkan di sini -->
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                                    <td><strong id="transactionTotal">Rp0</strong></td>
+                                                    <td></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-3">
+                                        <select class="form-select me-2" id="transactionService" style="width: 60%">
+                                            <option value="">Pilih Layanan</option>
+                                        </select>
+                                        <button type="button" class="btn btn-primary" id="addServiceBtn">Tambah Layanan</button>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" id="saveTransactionBtn">Simpan Transaksi</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Detail Transaksi -->
+                <div class="modal fade" id="transactionDetailModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Detail Transaksi</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body" id="transactionDetailContent">
+                                <!-- Detail transaksi akan dimuat di sini -->
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Load halaman dashboard sebagai default
+            loadPage('dashboard');
+
+            // Event listeners untuk navigasi
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const page = e.currentTarget.getAttribute('data-page');
+                    loadPage(page);
+                    
+                    // Update active state
+                    document.querySelectorAll('.nav-link').forEach(navLink => {
+                        navLink.classList.remove('active');
+                    });
+                    e.currentTarget.classList.add('active');
+                });
+            });
+
+            // Event listener untuk logout
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                auth.signOut().then(() => {
+                    document.getElementById('app-content').style.display = 'none';
+                    document.getElementById('login-container').style.display = 'block';
+                    showAlert('Anda telah logout', 'info');
+                });
+            });
+
+            // Event listener untuk tambah pelanggan
+            document.getElementById('saveCustomerBtn').addEventListener('click', saveCustomer);
+
+            // Event listener untuk tambah layanan
+            document.getElementById('saveServiceBtn').addEventListener('click', saveService);
+
+            // Event listener untuk transaksi
+            document.addEventListener('click', function(e) {
+                if (e.target && e.target.id === 'addTransactionBtn') {
+                    showTransactionModal();
+                }
+                if (e.target && e.target.id === 'addServiceBtn') {
+                    addServiceToTransaction();
+                }
+                if (e.target && e.target.id === 'saveTransactionBtn') {
+                    saveTransaction();
+                }
+            });
+        }
+
+        // ==================== PAGE LOADING ====================
+        function loadPage(page) {
+            const mainContent = document.getElementById('main-content');
+            
+            switch(page) {
+                case 'dashboard':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Dashboard</h2>
+                        </div>
+                        
+                        <div class="row mb-4">
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card stat-card total h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col me-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                    Total Transaksi</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalTransactions">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-receipt fs-2 text-primary"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card stat-card paid h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col me-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                    Lunas</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="paidTransactions">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-check-circle fs-2 text-success"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card stat-card pending h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col me-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                    Belum Bayar</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="pendingTransactions">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-clock fs-2 text-warning"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-3 col-md-6 mb-4">
+                                <div class="card stat-card canceled h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col me-2">
+                                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                    Pelanggan</div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalCustomers">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="bi bi-people fs-2 text-danger"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-lg-6 mb-4">
+                                <div class="card shadow">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Transaksi Terbaru</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>No</th>
+                                                        <th>Tanggal</th>
+                                                        <th>Pelanggan</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="recentTransactions">
+                                                    <!-- Data transaksi terbaru -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 mb-4">
+                                <div class="card shadow">
+                                    <div class="card-header py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary">Pelanggan Terbaru</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>No</th>
+                                                        <th>Nama</th>
+                                                        <th>Telepon</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="recentCustomers">
+                                                    <!-- Data pelanggan terbaru -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    loadDashboardData();
+                    break;
+                    
+                case 'customers':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Manajemen Pelanggan</h2>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                                <i class="bi bi-plus"></i> Tambah Pelanggan
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama</th>
+                                        <th>Nomor HP</th>
+                                        <th>Alamat</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customersTable">
+                                    <!-- Data pelanggan akan dimuat di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    loadCustomers();
+                    break;
+                    
+                case 'services':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Manajemen Layanan</h2>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                                <i class="bi bi-plus"></i> Tambah Layanan
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Nama Layanan</th>
+                                        <th>Harga</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="servicesTable">
+                                    <!-- Data layanan akan dimuat di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    loadServices();
+                    break;
+                    
+                case 'transactions':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Manajemen Transaksi</h2>
+                            <button class="btn btn-primary" id="addTransactionBtn">
+                                <i class="bi bi-plus"></i> Transaksi Baru
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>No</th>
+                                        <th>Tanggal</th>
+                                        <th>Pelanggan</th>
+                                        <th>Total</th>
+                                        <th>Status</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTable">
+                                    <!-- Data transaksi akan dimuat di sini -->
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    loadTransactions();
+                    break;
+                    
+                case 'reports':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Laporan</h2>
+                            <div>
+                                <input type="month" class="form-control" id="reportMonth" value="${new Date().toISOString().slice(0, 7)}">
+                            </div>
+                        </div>
+                        <div class="card shadow mb-4">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Ringkasan Bulanan</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <canvas id="transactionChart" height="200"></canvas>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="table-responsive">
+                                            <table class="table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Status</th>
+                                                        <th>Jumlah</th>
+                                                        <th>Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="reportSummary">
+                                                    <!-- Ringkasan laporan -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card shadow">
+                            <div class="card-header py-3">
+                                <h6 class="m-0 font-weight-bold text-primary">Detail Transaksi</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Tanggal</th>
+                                                <th>Pelanggan</th>
+                                                <th>Total</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="reportTransactions">
+                                            <!-- Detail transaksi laporan -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    loadReports();
+                    break;
+                    
+                case 'settings':
+                    mainContent.innerHTML = `
+                        <div class="d-flex justify-content-between mb-4">
+                            <h2>Pengaturan</h2>
+                        </div>
+                        <div class="card shadow">
+                            <div class="card-body">
+                                <form id="settingsForm">
+                                    <div class="mb-3">
+                                        <label class="form-label">Nama Laundry</label>
+                                        <input type="text" class="form-control" id="laundryName">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Alamat</label>
+                                        <textarea class="form-control" id="laundryAddress"></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Telepon</label>
+                                        <input type="text" class="form-control" id="laundryPhone">
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+                                </form>
+                            </div>
+                        </div>
+                    `;
+                    loadSettings();
+                    break;
+            }
+        }
+
+        // ==================== DASHBOARD FUNCTIONS ====================
+        function loadDashboardData() {
+            // Hitung total transaksi
+            database.ref('transactions').once('value')
+                .then(snapshot => {
+                    const total = snapshot.numChildren();
+                    document.getElementById('totalTransactions').textContent = total;
+                    
+                    // Hitung transaksi lunas dan belum bayar
+                    let paid = 0;
+                    let pending = 0;
+                    
+                    snapshot.forEach(child => {
+                        if (child.val().paymentStatus === 'LUNAS') {
+                            paid++;
+                        } else {
+                            pending++;
+                        }
+                    });
+                    
+                    document.getElementById('paidTransactions').textContent = paid;
+                    document.getElementById('pendingTransactions').textContent = pending;
+                });
+                
+            // Hitung total pelanggan
+            database.ref('customers').once('value')
+                .then(snapshot => {
+                    document.getElementById('totalCustomers').textContent = snapshot.numChildren();
+                });
+                
+            // Load transaksi terbaru
+            database.ref('transactions').orderByChild('createdAt').limitToLast(5).once('value')
+                .then(snapshot => {
+                    const tbody = document.getElementById('recentTransactions');
+                    tbody.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data transaksi</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    const transactions = [];
+                    snapshot.forEach(child => {
+                        transactions.unshift(child.val()); // Untuk mengurutkan dari yang terbaru
+                    });
+                    
+                    transactions.forEach(transaction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${formatDate(transaction.date)}</td>
+                            <td>${transaction.customerName || '-'}</td>
+                            <td>${formatCurrency(transaction.total)}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                });
+                
+            // Load pelanggan terbaru
+            database.ref('customers').orderByChild('createdAt').limitToLast(5).once('value')
+                .then(snapshot => {
+                    const tbody = document.getElementById('recentCustomers');
+                    tbody.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        tbody.innerHTML = '<tr><td colspan="3" class="text-center">Tidak ada data pelanggan</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    const customers = [];
+                    snapshot.forEach(child => {
+                        customers.unshift(child.val()); // Untuk mengurutkan dari yang terbaru
+                    });
+                    
+                    customers.forEach(customer => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${customer.name || '-'}</td>
+                            <td>${customer.phone || '-'}</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+
+        // ==================== CUSTOMER FUNCTIONS ====================
+        function loadCustomers() {
+            const tbody = document.getElementById('customersTable');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center">Memuat data...</td></tr>';
+            
+            database.ref('customers').once('value')
+                .then((snapshot) => {
+                    tbody.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data pelanggan</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    snapshot.forEach((childSnapshot) => {
+                        const customer = childSnapshot.val();
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${customer.name || '-'}</td>
+                            <td>${customer.phone || '-'}</td>
+                            <td>${customer.address || '-'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${childSnapshot.key}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch((error) => {
+                    showAlert('Gagal memuat data pelanggan: ' + error.message, 'danger');
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">Gagal memuat data</td></tr>';
+                });
+        }
+
+        function saveCustomer() {
+            const name = document.getElementById('customerName').value.trim();
+            const phone = document.getElementById('customerPhone').value.trim();
+            const address = document.getElementById('customerAddress').value.trim();
+            
+            if (!name || !phone) {
+                showAlert('Nama dan nomor HP harus diisi!', 'danger');
+                return;
+            }
+            
+            const customerData = {
+                name,
+                phone,
+                address,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            database.ref('customers').push(customerData)
+                .then(() => {
+                    showAlert('Pelanggan berhasil ditambahkan!', 'success');
+                    document.getElementById('customerForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+                    loadCustomers();
+                })
+                .catch((error) => {
+                    showAlert('Gagal menambahkan pelanggan: ' + error.message, 'danger');
+                });
+        }
+
+        function deleteCustomer(customerId) {
+            if (confirm('Apakah Anda yakin ingin menghapus pelanggan ini?')) {
+                database.ref('customers/' + customerId).remove()
+                    .then(() => {
+                        showAlert('Pelanggan berhasil dihapus', 'success');
+                        loadCustomers();
+                    })
+                    .catch((error) => {
+                        showAlert('Gagal menghapus pelanggan: ' + error.message, 'danger');
+                    });
+            }
+        }
+
+        // ==================== SERVICE FUNCTIONS ====================
+        function loadServices() {
+            const tbody = document.getElementById('servicesTable');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center">Memuat data...</td></tr>';
+            
+            database.ref('services').once('value')
+                .then((snapshot) => {
+                    tbody.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data layanan</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    snapshot.forEach((childSnapshot) => {
+                        const service = childSnapshot.val();
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${service.name || '-'}</td>
+                            <td>${formatCurrency(service.price || 0)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteService('${childSnapshot.key}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch((error) => {
+                    showAlert('Gagal memuat data layanan: ' + error.message, 'danger');
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center">Gagal memuat data</td></tr>';
+                });
+        }
+
+        function saveService() {
+            const name = document.getElementById('serviceName').value.trim();
+            const price = parseFloat(document.getElementById('servicePrice').value);
+            
+            if (!name || isNaN(price) || price <= 0) {
+                showAlert('Nama dan harga harus diisi dengan benar!', 'danger');
+                return;
+            }
+            
+            const serviceData = {
+                name,
+                price,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            database.ref('services').push(serviceData)
+                .then(() => {
+                    showAlert('Layanan berhasil ditambahkan!', 'success');
+                    document.getElementById('serviceForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addServiceModal')).hide();
+                    loadServices();
+                })
+                .catch((error) => {
+                    showAlert('Gagal menambahkan layanan: ' + error.message, 'danger');
+                });
+        }
+
+        function deleteService(serviceId) {
+            if (confirm('Apakah Anda yakin ingin menghapus layanan ini?')) {
+                database.ref('services/' + serviceId).remove()
+                    .then(() => {
+                        showAlert('Layanan berhasil dihapus', 'success');
+                        loadServices();
+                    })
+                    .catch((error) => {
+                        showAlert('Gagal menghapus layanan: ' + error.message, 'danger');
+                    });
+            }
+        }
+
+        // ==================== TRANSACTION FUNCTIONS ====================
+        function showTransactionModal() {
+            // Reset form
+            document.getElementById('transactionForm').reset();
+            document.getElementById('transactionItems').innerHTML = '';
+            document.getElementById('transactionTotal').textContent = 'Rp0';
+            
+            // Set tanggal default ke sekarang
+            const now = new Date();
+            const formattedDate = now.toISOString().slice(0, 16);
+            document.getElementById('transactionDate').value = formattedDate;
+            
+            // Load daftar pelanggan
+            const customerSelect = document.getElementById('transactionCustomer');
+            customerSelect.innerHTML = '<option value="">Pilih Pelanggan</option>';
+            
+            database.ref('customers').once('value')
+                .then(snapshot => {
+                    snapshot.forEach(child => {
+                        const customer = child.val();
+                        const option = document.createElement('option');
+                        option.value = child.key;
+                        option.textContent = `${customer.name} - ${customer.phone}`;
+                        customerSelect.appendChild(option);
+                    });
+                });
+                
+            // Load daftar layanan
+            const serviceSelect = document.getElementById('transactionService');
+            serviceSelect.innerHTML = '<option value="">Pilih Layanan</option>';
+            
+            database.ref('services').once('value')
+                .then(snapshot => {
+                    snapshot.forEach(child => {
+                        const service = child.val();
+                        const option = document.createElement('option');
+                        option.value = child.key;
+                        option.textContent = `${service.name} - ${formatCurrency(service.price)}`;
+                        option.dataset.price = service.price;
+                        serviceSelect.appendChild(option);
+                    });
+                });
+                
+            // Tampilkan modal
+            const modal = new bootstrap.Modal(document.getElementById('addTransactionModal'));
+            modal.show();
+        }
+
+        function addServiceToTransaction() {
+            const serviceSelect = document.getElementById('transactionService');
+            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            
+            if (!selectedOption.value) {
+                showAlert('Pilih layanan terlebih dahulu', 'warning');
+                return;
+            }
+            
+            const serviceId = selectedOption.value;
+            const serviceName = selectedOption.text.split(' - ')[0];
+            const servicePrice = parseFloat(selectedOption.dataset.price);
+            
+            // Buat row baru
+            const row = document.createElement('tr');
+            row.dataset.serviceId = serviceId;
+            row.innerHTML = `
+                <td>${serviceName}</td>
+                <td>${formatCurrency(servicePrice)}</td>
+                <td><input type="number" class="form-control form-control-sm qty" value="1" min="1"></td>
+                <td class="subtotal">${formatCurrency(servicePrice)}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger remove-item">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            // Tambahkan ke tabel
+            document.getElementById('transactionItems').appendChild(row);
+            
+            // Hitung ulang total
+            calculateTransactionTotal();
+            
+            // Reset pilihan layanan
+            serviceSelect.selectedIndex = 0;
+            
+            // Tambahkan event listeners
+            row.querySelector('.qty').addEventListener('change', function() {
+                const qty = parseInt(this.value) || 1;
+                const price = servicePrice;
+                row.querySelector('.subtotal').textContent = formatCurrency(qty * price);
+                calculateTransactionTotal();
+            });
+            
+            row.querySelector('.remove-item').addEventListener('click', function() {
+                row.remove();
+                calculateTransactionTotal();
+            });
+        }
+
+        function calculateTransactionTotal() {
+            let total = 0;
+            const rows = document.getElementById('transactionItems').querySelectorAll('tr');
+            
+            rows.forEach(row => {
+                const price = parseFloat(row.querySelector('td:nth-child(2)').textContent.replace('Rp', '').replace(/\./g, ''));
+                const qty = parseInt(row.querySelector('.qty').value) || 1;
+                total += price * qty;
+            });
+            
+            document.getElementById('transactionTotal').textContent = formatCurrency(total);
+            return total;
+        }
+
+        function saveTransaction() {
+            const customerId = document.getElementById('transactionCustomer').value;
+            const customerName = document.getElementById('transactionCustomer').options[document.getElementById('transactionCustomer').selectedIndex].text.split(' - ')[0];
+            const date = document.getElementById('transactionDate').value;
+            const status = document.getElementById('transactionStatus').value;
+            const note = document.getElementById('transactionNote').value;
+            const total = calculateTransactionTotal();
+            
+            if (!customerId) {
+                showAlert('Pilih pelanggan terlebih dahulu', 'danger');
+                return;
+            }
+            
+            const items = [];
+            const rows = document.getElementById('transactionItems').querySelectorAll('tr');
+            
+            if (rows.length === 0) {
+                showAlert('Tambahkan minimal satu layanan', 'danger');
+                return;
+            }
+            
+            rows.forEach(row => {
+                const serviceId = row.dataset.serviceId;
+                const serviceName = row.querySelector('td:nth-child(1)').textContent;
+                const price = parseFloat(row.querySelector('td:nth-child(2)').textContent.replace('Rp', '').replace(/\./g, ''));
+                const qty = parseInt(row.querySelector('.qty').value) || 1;
+                
+                items.push({
+                    serviceId,
+                    serviceName,
+                    price,
+                    qty,
+                    subtotal: price * qty
+                });
+            });
+            
+            const transactionData = {
+                customerId,
+                customerName,
+                date,
+                paymentStatus: status,
+                note,
+                total,
+                items,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            database.ref('transactions').push(transactionData)
+                .then(() => {
+                    showAlert('Transaksi berhasil disimpan!', 'success');
+                    document.getElementById('transactionForm').reset();
+                    bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+                    loadTransactions();
+                    if (document.getElementById('main-content').innerHTML.includes('dashboard')) {
+                        loadDashboardData();
+                    }
+                })
+                .catch((error) => {
+                    showAlert('Gagal menyimpan transaksi: ' + error.message, 'danger');
+                });
+        }
+
+        function loadTransactions() {
+            const tbody = document.getElementById('transactionsTable');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Memuat data...</td></tr>';
+            
+            database.ref('transactions').orderByChild('createdAt').once('value')
+                .then((snapshot) => {
+                    tbody.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center">Tidak ada data transaksi</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    const transactions = [];
+                    
+                    // Simpan semua transaksi beserta key-nya
+                    snapshot.forEach(child => {
+                        transactions.unshift({
+                            key: child.key,
+                            ...child.val()
+                        });
+                    });
+                    
+                    transactions.forEach(transaction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${formatDate(transaction.date)}</td>
+                            <td>${transaction.customerName || '-'}</td>
+                            <td>${formatCurrency(transaction.total || 0)}</td>
+                            <td>
+                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                    ${transaction.paymentStatus || 'BELUM'}
+                                </span>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-info" onclick="viewTransaction('${transaction.key}')">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger ms-1" onclick="deleteTransaction('${transaction.key}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                })
+                .catch((error) => {
+                    showAlert('Gagal memuat data transaksi: ' + error.message, 'danger');
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Gagal memuat data</td></tr>';
+                });
+        }
+
+        function viewTransaction(transactionId) {
+            database.ref('transactions/' + transactionId).once('value')
+                .then(snapshot => {
+                    const transaction = snapshot.val();
+                    const content = document.getElementById('transactionDetailContent');
+                    
+                    let itemsHtml = '';
+                    transaction.items.forEach(item => {
+                        itemsHtml += `
+                            <tr>
+                                <td>${item.serviceName}</td>
+                                <td>${formatCurrency(item.price)}</td>
+                                <td>${item.qty}</td>
+                                <td>${formatCurrency(item.subtotal)}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    content.innerHTML = `
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5>Detail Transaksi</h5>
+                                <table class="table table-sm">
+                                    <tr>
+                                        <th>No. Transaksi</th>
+                                        <td>${transactionId}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Tanggal</th>
+                                        <td>${formatDate(transaction.date)}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Pelanggan</th>
+                                        <td>${transaction.customerName}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                                ${transaction.paymentStatus || 'BELUM'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Catatan</th>
+                                        <td>${transaction.note || '-'}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Rincian Layanan</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Layanan</th>
+                                                <th>Harga</th>
+                                                <th>Jumlah</th>
+                                                <th>Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${itemsHtml}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colspan="3">Total</th>
+                                                <th>${formatCurrency(transaction.total)}</th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const modal = new bootstrap.Modal(document.getElementById('transactionDetailModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    showAlert('Gagal memuat detail transaksi: ' + error.message, 'danger');
+                });
+        }
+
+        function deleteTransaction(transactionId) {
+            if (confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+                database.ref('transactions/' + transactionId).remove()
+                    .then(() => {
+                        showAlert('Transaksi berhasil dihapus', 'success');
+                        loadTransactions();
+                        if (document.getElementById('main-content').innerHTML.includes('dashboard')) {
+                            loadDashboardData();
+                        }
+                    })
+                    .catch((error) => {
+                        showAlert('Gagal menghapus transaksi: ' + error.message, 'danger');
+                    });
+            }
+        }
+
+        // ==================== REPORT FUNCTIONS ====================
+        function loadReports() {
+            const month = document.getElementById('reportMonth').value;
+            const year = month.split('-')[0];
+            const monthNum = month.split('-')[1];
+            
+            // Hitung transaksi bulan ini
+            database.ref('transactions').orderByChild('date').once('value')
+                .then(snapshot => {
+                    let total = 0;
+                    let paid = 0;
+                    let pending = 0;
+                    let paidAmount = 0;
+                    let pendingAmount = 0;
+                    
+                    const transactions = [];
+                    
+                    snapshot.forEach(child => {
+                        const transaction = child.val();
+                        const transactionDate = new Date(transaction.date);
+                        
+                        if (transactionDate.getFullYear() == year && (transactionDate.getMonth() + 1) == monthNum) {
+                            transactions.push(transaction);
+                            
+                            if (transaction.paymentStatus === 'LUNAS') {
+                                paid++;
+                                paidAmount += transaction.total || 0;
+                            } else {
+                                pending++;
+                                pendingAmount += transaction.total || 0;
+                            }
+                        }
+                    });
+                    
+                    total = paid + pending;
+                    
+                    // Update ringkasan
+                    document.getElementById('reportSummary').innerHTML = `
+                        <tr>
+                            <td>Total Transaksi</td>
+                            <td>${total}</td>
+                            <td>${formatCurrency(paidAmount + pendingAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Lunas</td>
+                            <td>${paid}</td>
+                            <td>${formatCurrency(paidAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td>Belum Bayar</td>
+                            <td>${pending}</td>
+                            <td>${formatCurrency(pendingAmount)}</td>
+                        </tr>
+                    `;
+                    
+                    // Update detail transaksi
+                    const tbody = document.getElementById('reportTransactions');
+                    tbody.innerHTML = '';
+                    
+                    if (transactions.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada transaksi pada bulan ini</td></tr>';
+                        return;
+                    }
+                    
+                    let index = 1;
+                    transactions.forEach(transaction => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${index++}</td>
+                            <td>${formatDate(transaction.date)}</td>
+                            <td>${transaction.customerName || '-'}</td>
+                            <td>${formatCurrency(transaction.total || 0)}</td>
+                            <td>
+                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                    ${transaction.paymentStatus || 'BELUM'}
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Update chart (jika Chart.js tersedia)
+                    if (typeof Chart !== 'undefined') {
+                        updateTransactionChart(paid, pending);
+                    }
+                });
+        }
+
+        function updateTransactionChart(paidCount, pendingCount) {
+            const ctx = document.getElementById('transactionChart').getContext('2d');
+            
+            // Hapus chart sebelumnya jika ada
+            if (window.transactionChart) {
+                window.transactionChart.destroy();
+            }
+            
+            window.transactionChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Lunas', 'Belum Bayar'],
+                    datasets: [{
+                        data: [paidCount, pendingCount],
+                        backgroundColor: ['#1cc88a', '#f6c23e'],
+                        hoverBackgroundColor: ['#17a673', '#dda20a'],
+                        hoverBorderColor: "rgba(234, 236, 244, 1)",
+                    }],
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        }
+                    },
+                    cutout: '70%',
+                },
+            });
+        }
+
+        // ==================== SETTINGS FUNCTIONS ====================
+        function loadSettings() {
+            database.ref('settings').once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        const settings = snapshot.val();
+                        document.getElementById('laundryName').value = settings.name || '';
+                        document.getElementById('laundryAddress').value = settings.address || '';
+                        document.getElementById('laundryPhone').value = settings.phone || '';
+                    }
+                });
+                
+            document.getElementById('settingsForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const settingsData = {
+                    name: document.getElementById('laundryName').value.trim(),
+                    address: document.getElementById('laundryAddress').value.trim(),
+                    phone: document.getElementById('laundryPhone').value.trim(),
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                
+                database.ref('settings').set(settingsData)
+                    .then(() => {
+                        showAlert('Pengaturan berhasil disimpan', 'success');
+                    })
+                    .catch(error => {
+                        showAlert('Gagal menyimpan pengaturan: ' + error.message, 'danger');
+                    });
+            });
+        }
+
+        // ==================== GLOBAL FUNCTIONS ====================
+        window.deleteCustomer = deleteCustomer;
+        window.deleteService = deleteService;
+        window.viewTransaction = viewTransaction;
+        window.deleteTransaction = deleteTransaction;
+
+        // Event listener untuk perubahan bulan di laporan
+        document.addEventListener('change', function(e) {
+            if (e.target && e.target.id === 'reportMonth') {
+                loadReports();
+            }
+        });
+
+        // Load Chart.js untuk laporan
+        if (document.getElementById('reportMonth')) {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+            script.onload = function() {
+                if (document.getElementById('main-content').innerHTML.includes('reports')) {
+                    loadReports();
+                }
+            };
+            document.head.appendChild(script);
+        }
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
