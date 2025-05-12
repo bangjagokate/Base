@@ -97,6 +97,27 @@
       font-weight: 600;
     }
     
+    .search-container {
+      margin-bottom: 1.5rem;
+      display: flex;
+      gap: 10px;
+    }
+    
+    #searchInput {
+      flex: 1;
+      padding: 10px 15px;
+      border: 2px solid #e9ecef;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: all 0.3s ease;
+    }
+    
+    #searchInput:focus {
+      border-color: #4361ee;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
     table {
       width: 100%;
       border-collapse: collapse;
@@ -156,6 +177,12 @@
       color: white;
     }
     
+    .no-results {
+      text-align: center;
+      padding: 20px;
+      color: #6c757d;
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -176,6 +203,10 @@
         display: block;
         overflow-x: auto;
       }
+      
+      .search-container {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -191,6 +222,10 @@
 
 <div id="app" class="hidden">
   <h2>Daftar Nota Laundry</h2>
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="Cari nota, nama, atau nomor HP...">
+    <button onclick="searchNota()">Cari</button>
+  </div>
   <table id="notaTable">
     <thead>
       <tr>
@@ -212,7 +247,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-auth.js";
-  import { getDatabase, ref, get, child, onValue } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
+  import { getDatabase, ref, get, child, onValue, query, orderByChild } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-database.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyAi9G44WIIluagcBWq6D5AdphSRiRF5B9E",
@@ -230,6 +265,7 @@
 
   const loginForm = document.getElementById("loginForm");
   const appDiv = document.getElementById("app");
+  let allTransactions = [];
 
   onAuthStateChanged(auth, user => {
     if (user) {
@@ -259,20 +295,43 @@
   };
 
   async function loadData() {
-    const transSnap = await get(ref(db, 'transactions'));
+    const transQuery = query(ref(db, 'transactions'), orderByChild('createdAt'));
     const custSnap = await get(ref(db, 'customers'));
-    const data = transSnap.val() || {};
     const customers = custSnap.val() || {};
 
+    onValue(transQuery, (snapshot) => {
+      const data = snapshot.val() || {};
+      allTransactions = [];
+      
+      // Convert to array and sort by createdAt (newest first)
+      for (let id in data) {
+        allTransactions.push({
+          id,
+          ...data[id]
+        });
+      }
+      
+      // Sort by createdAt (newest first)
+      allTransactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      
+      displayTransactions(allTransactions, customers);
+    });
+  }
+
+  function displayTransactions(transactions, customers) {
     const tbody = document.querySelector("#notaTable tbody");
     tbody.innerHTML = "";
 
-    for (let id in data) {
-      const tr = data[id];
+    if (transactions.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="no-results">Tidak ada data nota</td></tr>`;
+      return;
+    }
+
+    for (let tr of transactions) {
       const cust = customers[tr.customerId] || {};
       const phone = cust.phone || "-";
       const layanan = tr.items.map(i => `${i.qty}x ${i.serviceName} = Rp${i.subtotal}`).join(", ");
-      const nota = id.slice(-6).toUpperCase();
+      const nota = tr.id.slice(-6).toUpperCase();
 
       const row = `
         <tr>
@@ -284,12 +343,40 @@
           <td>Rp${tr.total}</td>
           <td>
             <button onclick="kirimWA('${tr.customerName}', '${phone}', '${nota}', \`${layanan}\`, ${tr.total})">WA</button>
-            <button onclick="printNota('${tr.customerName}', '${nota}', \`${layanan}\`, ${tr.total})">Print</button>
+            <button onclick="printNota('${tr.customerName}', '${nota}', \`${layanan}\`, ${tr.total}, '${phone}')">Print</button>
           </td>
         </tr>`;
       tbody.innerHTML += row;
     }
   }
+
+  window.searchNota = function() {
+    const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+    const custSnap = get(ref(db, 'customers'))
+      .then(custSnap => {
+        const customers = custSnap.val() || {};
+        const filtered = allTransactions.filter(tr => {
+          const cust = customers[tr.customerId] || {};
+          const phone = cust.phone || "";
+          const nota = tr.id.slice(-6).toUpperCase();
+          
+          return (
+            nota.toLowerCase().includes(searchTerm) ||
+            tr.customerName.toLowerCase().includes(searchTerm) ||
+            phone.toLowerCase().includes(searchTerm)
+          );
+        });
+        
+        displayTransactions(filtered, customers);
+      });
+  };
+
+  // Allow search on Enter key
+  document.getElementById("searchInput").addEventListener("keyup", function(event) {
+    if (event.key === "Enter") {
+      searchNota();
+    }
+  });
 
   window.kirimWA = function (nama, nohp, nota, layanan, total) {
     if (!nohp || nohp === "-") return alert("Nomor WhatsApp tidak tersedia!");
@@ -306,21 +393,142 @@
     window.open(`https://wa.me/${nohp}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  window.printNota = function (nama, nota, layanan, total) {
-    const win = window.open('', '', 'width=300,height=500');
-    win.document.write(`<pre>
-HANIFA LAUNDRY
-Kalibagor, Banyumas
------------------------
-Nota       : ${nota}
-Pelanggan  : ${nama}
-Layanan    : ${layanan}
-Total      : Rp${total}
------------------------
-Terima kasih!
-    </pre>`);
+  window.printNota = function (nama, nota, layanan, total, nohp) {
+    const win = window.open('', '', 'width=300,height=600');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 10px;
+            background: white;
+          }
+          .receipt {
+            width: 280px;
+            margin: 0 auto;
+            padding: 15px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed #ddd;
+          }
+          .header h1 {
+            margin: 5px 0;
+            font-size: 18px;
+            font-weight: bold;
+          }
+          .header p {
+            margin: 3px 0;
+            font-size: 12px;
+            color: #555;
+          }
+          .nota-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+          }
+          .customer-info {
+            margin: 15px 0;
+            text-align: center;
+          }
+          .customer-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
+          }
+          .customer-phone {
+            font-size: 14px;
+            color: #555;
+          }
+          .details {
+            margin: 15px 0;
+            font-size: 13px;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+          }
+          .services {
+            margin: 15px 0;
+            font-size: 13px;
+            line-height: 1.4;
+          }
+          .service-item {
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .total {
+            font-weight: bold;
+            font-size: 15px;
+            text-align: right;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 11px;
+            color: #777;
+            padding-top: 10px;
+            border-top: 1px dashed #ddd;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <div class="nota-number">NOTA: #${nota}</div>
+            <h1>HANIFA LAUNDRY</h1>
+            <p>Kalibagor, Banyumas | Telp: 0812-3456-7890</p>
+          </div>
+          
+          <div class="customer-info">
+            <div class="customer-name">${nama}</div>
+            <div class="customer-phone">${nohp || '-'}</div>
+          </div>
+          
+          <div class="details">
+            <div class="detail-row">
+              <span>Tanggal:</span>
+              <span>${new Date().toLocaleDateString('id-ID')}</span>
+            </div>
+            <div class="detail-row">
+              <span>Waktu:</span>
+              <span>${new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+          </div>
+          
+          <div class="services">
+            <div style="font-weight:bold; margin-bottom:8px;">LAYANAN:</div>
+            ${layanan.split(', ').map(item => `
+              <div class="service-item">
+                <span>${item.split('=')[0]}</span>
+                <span>${item.split('=')[1]}</span>
+              </div>
+            `).join('')}
+          </div>
+          
+          <div class="total">
+            TOTAL: Rp${total.toLocaleString('id-ID')}
+          </div>
+          
+          <div class="footer">
+            Terima kasih atas kepercayaan Anda<br>
+            Barang yang sudah dibayar tidak dapat dikembalikan
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
     win.document.close();
-    win.print();
+    setTimeout(() => win.print(), 200);
   };
 </script>
 
