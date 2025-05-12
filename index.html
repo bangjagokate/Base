@@ -37,6 +37,14 @@
         .stat-card.canceled {
             border-left-color: #e74a3b;
         }
+        .badge-pill {
+            padding-right: 0.6em;
+            padding-left: 0.6em;
+            border-radius: 10rem;
+        }
+        .status-toggle {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -486,6 +494,7 @@
                                                         <th>Tanggal</th>
                                                         <th>Pelanggan</th>
                                                         <th>Total</th>
+                                                        <th>Status</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="recentTransactions">
@@ -738,7 +747,7 @@
                     tbody.innerHTML = '';
                     
                     if (!snapshot.exists()) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="text-center">Tidak ada data transaksi</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Tidak ada data transaksi</td></tr>';
                         return;
                     }
                     
@@ -755,6 +764,12 @@
                             <td>${formatDate(transaction.date)}</td>
                             <td>${transaction.customerName || '-'}</td>
                             <td>${formatCurrency(transaction.total)}</td>
+                            <td>
+                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'} status-toggle" 
+                                      onclick="togglePaymentStatus('${child.key}', '${transaction.paymentStatus || 'BELUM'}')">
+                                    ${transaction.paymentStatus || 'BELUM'}
+                                </span>
+                            </td>
                         `;
                         tbody.appendChild(row);
                     });
@@ -1153,7 +1168,8 @@
                             <td>${transaction.customerName || '-'}</td>
                             <td>${formatCurrency(transaction.total || 0)}</td>
                             <td>
-                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'} status-toggle" 
+                                      onclick="togglePaymentStatus('${transaction.key}', '${transaction.paymentStatus || 'BELUM'}')">
                                     ${transaction.paymentStatus || 'BELUM'}
                                 </span>
                             </td>
@@ -1173,6 +1189,29 @@
                     showAlert('Gagal memuat data transaksi: ' + error.message, 'danger');
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Gagal memuat data</td></tr>';
                 });
+        }
+
+        function togglePaymentStatus(transactionId, currentStatus) {
+            const newStatus = currentStatus === 'LUNAS' ? 'BELUM' : 'LUNAS';
+            
+            if (confirm(`Ubah status pembayaran dari ${currentStatus} menjadi ${newStatus}?`)) {
+                database.ref('transactions/' + transactionId).update({
+                    paymentStatus: newStatus
+                })
+                .then(() => {
+                    showAlert('Status pembayaran berhasil diubah', 'success');
+                    loadTransactions();
+                    if (document.getElementById('main-content').innerHTML.includes('dashboard')) {
+                        loadDashboardData();
+                    }
+                    if (document.getElementById('main-content').innerHTML.includes('reports')) {
+                        loadReports();
+                    }
+                })
+                .catch(error => {
+                    showAlert('Gagal mengubah status pembayaran: ' + error.message, 'danger');
+                });
+            }
         }
 
         function viewTransaction(transactionId) {
@@ -1213,7 +1252,8 @@
                                     <tr>
                                         <th>Status</th>
                                         <td>
-                                            <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                            <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'} status-toggle" 
+                                                  onclick="togglePaymentStatus('${transactionId}', '${transaction.paymentStatus || 'BELUM'}')">
                                                 ${transaction.paymentStatus || 'BELUM'}
                                             </span>
                                         </td>
@@ -1297,7 +1337,10 @@
                         const transactionDate = new Date(transaction.date);
                         
                         if (transactionDate.getFullYear() == year && (transactionDate.getMonth() + 1) == monthNum) {
-                            transactions.push(transaction);
+                            transactions.push({
+                                key: child.key,
+                                ...transaction
+                            });
                             
                             if (transaction.paymentStatus === 'LUNAS') {
                                 paid++;
@@ -1348,7 +1391,8 @@
                             <td>${transaction.customerName || '-'}</td>
                             <td>${formatCurrency(transaction.total || 0)}</td>
                             <td>
-                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'}">
+                                <span class="badge ${transaction.paymentStatus === 'LUNAS' ? 'bg-success' : 'bg-warning'} status-toggle" 
+                                      onclick="togglePaymentStatus('${transaction.key}', '${transaction.paymentStatus || 'BELUM'}')">
                                     ${transaction.paymentStatus || 'BELUM'}
                                 </span>
                             </td>
@@ -1431,6 +1475,7 @@
         window.deleteService = deleteService;
         window.viewTransaction = viewTransaction;
         window.deleteTransaction = deleteTransaction;
+        window.togglePaymentStatus = togglePaymentStatus;
 
         // Event listener untuk perubahan bulan di laporan
         document.addEventListener('change', function(e) {
